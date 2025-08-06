@@ -1,47 +1,71 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Start from './pages/common/Start';
-import OnboardingOwner from './pages/owner/OnBoarding';
-import OnboardingStudent from './pages/student/OnBoarding';
 import Login from './pages/common/Login';
 import Select from './pages/common/Select';
+
+import OnboardingOwner from './pages/owner/OnBoarding';
 import DashOwner from './pages/owner/Dash';
-import DashStudent from './pages/student/Dash';
 import NoticeOwner from './pages/owner/Notice';
-import NoticeStudent from './pages/student/Notice';
 import HeartOwner from './pages/owner/Heart';
-import HeartStudent from './pages/student/Heart';
 import MyOwner from './pages/owner/My';
-import MyStudent from './pages/student/My';
 import ChatOwner from './pages/owner/Chat';
-import ChatStudent from './pages/student/Chat';
 import SearchOwner from './pages/owner/Search';
-import SearchStudent from './pages/student/Search';
 import MatchOwner from './pages/owner/Match';
+import ReviewOwner from './pages/owner/Review/indes';
+import ReportOwner from './pages/owner/Report/indesx';
+import Request from './pages/owner/Request';
+
+import OnboardingStudent from './pages/student/OnBoarding';
+import DashStudent from './pages/student/Dash';
+import NoticeStudent from './pages/student/Notice';
+import HeartStudent from './pages/student/Heart';
+import MyStudent from './pages/student/My';
+import ChatStudent from './pages/student/Chat';
+import SearchStudent from './pages/student/Search';
 import MatchStudent from './pages/student/Match';
+import FeedbackStudent from './pages/student/Feedback';
+import ReviewStudent from './pages/student/Review';
+import ReportStudent from './pages/student/Report';
+import Apply from './pages/student/Apply';
+
+
+
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* 공통 */}
         <Route path="/" element={<Start />} />
-        <Route path="/login" elemebt={<Login />}/>
-        <Route path="/select" elemebt={<Select />}/>
-        <Route path="/onboarding-o" element={<OnboardingOwner />} />
-        <Route path="/onboarding-s" elemebt={<OnboardingStudent />}/>
-        <Route path="/dash-o" elemebt={<DashOwner />}/>
-        <Route path="/dash-s" elemebt={<DashStudent />}/>
-        <Route path="/notice-o" elemebt={<NoticeOwner />}/>
-        <Route path="/notice-s" elemebt={<NoticeStudent />}/>
-        <Route path="/heart-o" elemebt={<HeartOwner />}/>
-        <Route path="/heart-s" elemebt={<HeartStudent />}/>
-        <Route path="/my-o" elemebt={<MyOwner />}/>
-        <Route path="/my-s" elemebt={<MyStudent />}/>
-        <Route path="/chat-o" elemebt={<ChatOwner />}/>
-        <Route path="/chat-s" elemebt={<ChatStudent />}/>
-        <Route path="/search-o" elemebt={<SearchOwner />}/>
-        <Route path="/search-s" elemebt={<SearchStudent />}/>
-        <Route path="/match-o" elemebt={<MatchOwner />}/>
-        <Route path="/match-s" elemebt={<MatchStudent />}/>
+        <Route path="/login" element={<Login />} />
+        <Route path="/select" element={<Select />} />
+
+        {/* Owner (소상공인) */}
+        <Route path="/owner/onboarding" element={<OnboardingOwner />} />
+        <Route path="/owner/dashboard" element={<DashOwner />} />
+        <Route path="/owner/notice" element={<NoticeOwner />} />
+        <Route path="/owner/heart" element={<HeartOwner />} />
+        <Route path="/owner/my" element={<MyOwner />} />
+        <Route path="/owner/chat" element={<ChatOwner />} />
+        <Route path="/owner/search" element={<SearchOwner />} />
+        <Route path="/owner/match" element={<MatchOwner />} />
+        <Route path="/owner/review" element={<ReviewOwner />} />
+        <Route path="/owner/report" element={<ReportOwner />} />
+        <Route path="/owner/request" element={<Request />} />
+
+        {/* Student (대학생) */}
+        <Route path="/student/onboarding" element={<OnboardingStudent />} />
+        <Route path="/student/dashboard" element={<DashStudent />} />
+        <Route path="/student/notice" element={<NoticeStudent />} />
+        <Route path="/student/heart" element={<HeartStudent />} />
+        <Route path="/student/my" element={<MyStudent />} />
+        <Route path="/student/chat" element={<ChatStudent />} />
+        <Route path="/student/search" element={<SearchStudent />} />
+        <Route path="/student/match" element={<MatchStudent />} />
+        <Route path="/student/feedback" element={<FeedbackStudent />} />
+        <Route path="/student/review" element={<ReviewStudent />} />
+        <Route path="/student/report" element={<ReportStudent />} />
+        <Route path="/student/apply" element={<Apply />} />
       </Routes>
     </BrowserRouter>
   );
