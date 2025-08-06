@@ -1,11 +1,34 @@
 import React from "react";
+import styled from "styled-components";
+import StartLogo from "../../../images/start/Startlogo.svg";
+
 
 const Start = () => {
   return (
-    <div style={{ padding: "40px", fontSize: "24px", textAlign: "center" }}>
-      👋 시작 페이지입니다! 프론트 힘내요~
-    </div>
+    <Container>
+      <Logo src={StartLogo} alt="UniBiz Logo" />
+    </Container>
   );
 };
 
 export default Start;
+
+const Container = styled.div`
+  width: 100%;
+  max-width: 390px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center;
+  background-color: #0080FF;
+  box-sizing: border-box;
+  padding: 0 20px;
+`;
+
+const Logo = styled.img`
+  width: 70%;
+  max-width: 300px;
+  margin-top: -200px;
+`;
