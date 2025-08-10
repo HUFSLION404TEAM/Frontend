@@ -1,35 +1,32 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Start from './pages/common/Start';
-import Login from './pages/common/Login';
-import Select from './pages/common/Select';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Start from "./pages/common/Start";
+import Login from "./pages/common/Login";
+import Select from "./pages/common/Select";
 
-import OnboardingOwner from './pages/owner/OnBoarding';
-import DashOwner from './pages/owner/Dash';
-import NoticeOwner from './pages/owner/Notice';
-import HeartOwner from './pages/owner/Heart';
-import MyOwner from './pages/owner/My';
-import ChatOwner from './pages/owner/Chat';
-import SearchOwner from './pages/owner/Search';
-import MatchOwner from './pages/owner/Match';
-import ReviewOwner from './pages/owner/Review/indes';
-import ReportOwner from './pages/owner/Report/indesx';
-import Request from './pages/owner/Request';
+import OnboardingOwner from "./pages/owner/OnBoarding";
+import DashOwner from "./pages/owner/Dash";
+import NoticeOwner from "./pages/owner/Notice";
+import HeartOwner from "./pages/owner/Heart";
+import MyOwner from "./pages/owner/My";
+import ChatOwner from "./pages/owner/Chat";
+import SearchOwner from "./pages/owner/Search";
+import MatchOwner from "./pages/owner/Match";
+import ReviewOwner from "./pages/owner/Review/indes";
+import ReportOwner from "./pages/owner/Report/indesx";
+import Request from "./pages/owner/Request";
 
-import OnboardingStudent from './pages/student/OnBoarding';
-import DashStudent from './pages/student/Dash';
-import NoticeStudent from './pages/student/Notice';
-import HeartStudent from './pages/student/Heart';
-import MyStudent from './pages/student/My';
-import ChatStudent from './pages/student/Chat';
-import SearchStudent from './pages/student/Search';
-import MatchStudent from './pages/student/Match';
-import FeedbackStudent from './pages/student/Feedback';
-import ReviewStudent from './pages/student/Review';
-import ReportStudent from './pages/student/Report';
-import Apply from './pages/student/Apply';
-
-
-
+import OnboardingStudent from "./pages/student/OnBoarding";
+import DashStudent from "./pages/student/Dash";
+import NoticeStudent from "./pages/student/Notice";
+import HeartStudent from "./pages/student/Heart";
+import MyStudent from "./pages/student/My";
+import ChatStudent from "./pages/student/Chat";
+import SearchStudent from "./pages/student/Search";
+import MatchStudent from "./pages/student/Match";
+import FeedbackStudent from "./pages/student/Feedback";
+import ReviewStudent from "./pages/student/Review";
+import ReportStudent from "./pages/student/Report";
+import Apply from "./pages/student/Apply";
 
 function App() {
   return (
@@ -42,7 +39,7 @@ function App() {
 
         {/* Owner (소상공인) */}
         <Route path="/owner/onboarding" element={<OnboardingOwner />} />
-        <Route path="/owner/dashboard" element={<DashOwner />} />
+        <Route path="/owner/dash" element={<DashOwner />} />
         <Route path="/owner/notice" element={<NoticeOwner />} />
         <Route path="/owner/heart" element={<HeartOwner />} />
         <Route path="/owner/my" element={<MyOwner />} />
@@ -55,7 +52,7 @@ function App() {
 
         {/* Student (대학생) */}
         <Route path="/student/onboarding" element={<OnboardingStudent />} />
-        <Route path="/student/dashboard" element={<DashStudent />} />
+        <Route path="/student/dash" element={<DashStudent />} />
         <Route path="/student/notice" element={<NoticeStudent />} />
         <Route path="/student/heart" element={<HeartStudent />} />
         <Route path="/student/my" element={<MyStudent />} />
