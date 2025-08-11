@@ -3,7 +3,9 @@ import BackIconSrc from "../../../assets/Back.svg";
 import SearchIconSrc from "../../../assets/Search.svg";
 import HomeIconSrc from "../../../assets/Home.svg";
 import HeartIconSrc from "../../../assets/Heart.svg";
+import EmptyHeartSrc from "../../../assets/emptyHeart.svg"; // ← 빈 하트 추가
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_H = 59; // StatusBar 높이
 const HEADER_H = 49; // Header 높이
@@ -53,7 +55,9 @@ const topFrameStyle = {
   zIndex: 2,
   display: "block",
 };
-const BackIcon = (
+
+// 클릭 핸들러를 매개변수로 받는 함수형 상수들
+const BackIcon = (onclick) => (
   <img
     src={BackIconSrc}
     alt="뒤로가기"
@@ -64,10 +68,14 @@ const BackIcon = (
       top: "50%",
       left: HEADER_PAD_L,
       transform: "translateY(-50%)",
+      cursor: "pointer",
     }}
+    onClick={onclick}
   />
 );
-const SearchIcon = (
+
+// ← 검색 아이콘을 함수형으로 변경 (onClick 받기)
+const SearchIcon = (onclick) => (
   <img
     src={SearchIconSrc}
     alt="검색"
@@ -78,10 +86,13 @@ const SearchIcon = (
       top: "50%",
       left: 317,
       transform: "translateY(-50%)",
+      cursor: "pointer",
     }}
+    onClick={onclick}
   />
 );
-const HomeIcon = (
+
+const HomeIcon = (onclick) => (
   <img
     src={HomeIconSrc}
     alt="홈"
@@ -92,9 +103,12 @@ const HomeIcon = (
       top: "50%",
       left: 346,
       transform: "translateY(-50%)",
+      cursor: "pointer",
     }}
+    onClick={onclick}
   />
 );
+
 const Title = (
   <div
     style={{
@@ -182,6 +196,7 @@ const cardStyle = {
     "linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.60) 100%)",
   boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
   boxSizing: "border-box",
+  cursor: "pointer", // ← 카드 전체 클릭 가능
 };
 const cardTitle = {
   color: "#111",
@@ -213,11 +228,57 @@ const heartAbs = {
   height: 24,
 };
 
+// ── 검색 팝업 스타일 ──
+const searchPopupStyle = {
+  position: "absolute",
+  top: STATUS_H + HEADER_H + 6,
+  left: "50%",
+  transform: "translateX(-50%)",
+  width: 348,
+  height: FILTER_H,
+  background: "#FFF",
+  border: "none",
+  borderRadius: "10px",
+  boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+  display: "flex",
+  alignItems: "center",
+  padding: "0 12px",
+  boxSizing: "border-box",
+  zIndex: 4,
+  outline: "none",
+};
+
+const backdropStyle = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 3,
+};
+
+const searchInputStyle = {
+  flex: 1,
+  height: "100%",
+  border: "none",
+  outline: "none",
+  fontSize: 14,
+};
+
 // ── 카드 컴포넌트 ──
-function FavoriteCard({ title, subtitle, temp }) {
+function FavoriteCard({ title, subtitle, temp, liked, onToggleHeart, onOpen }) {
   return (
-    <div style={cardStyle}>
-      <img src={HeartIconSrc} alt="좋아요" style={heartAbs} />
+    <div style={cardStyle} onClick={onOpen}>
+      {/* 하트: 클릭 시 카드로의 이동을 막고 토글만 */}
+      <img
+        src={liked ? HeartIconSrc : EmptyHeartSrc}
+        alt="좋아요"
+        style={{ ...heartAbs, cursor: "pointer" }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleHeart();
+        }}
+      />
       <div style={cardTitle}>{title}</div>
       <div style={cardSub}>{subtitle}</div>
       <div style={tempRow}>
@@ -230,6 +291,68 @@ function FavoriteCard({ title, subtitle, temp }) {
 
 // ── 메인 컴포넌트 ──
 export default function HeartStudent() {
+  const navigate = useNavigate();
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [activeFilter, setActiveFilter] = React.useState("전체");
+
+  // 리스트 데이터 (필요 시 API 대체)
+  const items = [
+    {
+      id: 1,
+      title: "디저트 메뉴 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "36°C · 11 days ago",
+    },
+    {
+      id: 2,
+      title: "여름 신메뉴 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "29°C · 7 days ago",
+    },
+    {
+      id: 3,
+      title: "겨울 신메뉴 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "31°C  · 10 days ago",
+    },
+    {
+      id: 4,
+      title: "크리마스 이벤트 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "31°C · 1 days ago",
+    },
+    {
+      id: 5,
+      title: "크리마스 이벤트 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "31°C · 1 days ago",
+    },
+    {
+      id: 6,
+      title: "크리마스 이벤트 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "31°C · 1 days ago",
+    },
+    {
+      id: 7,
+      title: "크리마스 이벤트 홍보 구인",
+      subtitle: "카페 | 음료점업 · 모집 중",
+      temp: "31°C · 1 days ago",
+    },
+  ];
+
+  // 하트 토글 상태: id -> boolean
+  const [likes, setLikes] = React.useState(() =>
+    Object.fromEntries(items.map((it) => [it.id, false]))
+  );
+
+  const toggleLike = (id) => setLikes((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const openDetail = (item) =>
+    navigate("/student/Detail", {
+      state: { title: item.title, subtitle: item.subtitle },
+    });
+
   return (
     <div style={containerStyle}>
       <div style={frameStyle}>
@@ -238,67 +361,94 @@ export default function HeartStudent() {
 
         {/* Header */}
         <div style={topFrameStyle}>
-          {BackIcon}
+          {BackIcon(() => {
+            if (window.history.length > 1) {
+              navigate("/student/dash");
+            } else {
+              navigate("/common/Start");
+            }
+          })}
           {Title}
-          {SearchIcon}
-          {HomeIcon}
+          {SearchIcon(() => setSearchOpen(true))}
+          {HomeIcon(() => navigate("/common/start"))}
         </div>
+
+        {/* 검색 팝업 */}
+        {searchOpen && (
+          <>
+            <div style={backdropStyle} onClick={() => setSearchOpen(false)} />
+            <div style={searchPopupStyle}>
+              <input
+                type="text"
+                placeholder="검색어를 입력하세요"
+                style={searchInputStyle}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") setSearchOpen(false);
+                  if (e.key === "Enter") {
+                    setSearchOpen(false);
+                  }
+                }}
+              />
+              <img
+                src={SearchIconSrc}
+                alt="검색 실행"
+                width={20}
+                height={20}
+                style={{ marginLeft: 8, cursor: "pointer" }}
+                onClick={() => setSearchOpen(false)}
+              />
+            </div>
+          </>
+        )}
 
         {/* Filter */}
         <div style={filterStyle}>
           <div style={filterMainStyle}>
-            <div style={filterFontContainer}>
-              <span style={filterFont}>전체</span>
-            </div>
-            <div style={filterFontContainer}>
-              <span style={filterFont}>소상공인</span>
-            </div>
-            <div style={filterFontContainer}>
-              <span style={filterFont}>공고</span>
-            </div>
-            <div style={filterFontContainer}>
-              <span style={filterFont}>모집 중</span>
-            </div>
+            {["전체", "소상공인", "공고", "모집 중"].map((label) => {
+              const isActive = activeFilter === label;
+              return (
+                <div
+                  key={label}
+                  onClick={() => setActiveFilter(label)}
+                  style={{
+                    ...filterFontContainer,
+                    ...(isActive
+                      ? {
+                          background: "#0080FF",
+                          boxShadow: "0 4px 7px 0 rgba(0, 128, 255, 0.25)",
+                          cursor: "pointer",
+                        }
+                      : { cursor: "pointer" }),
+                  }}
+                >
+                  <span
+                    style={{
+                      ...filterFont,
+                      ...(isActive ? { color: "#FFF", fontWeight: 600 } : null),
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* List */}
         <div style={listContainerStyle}>
-          <FavoriteCard
-            title="컴포즈커피 용인 외대점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="36°C"
-          />
-          <FavoriteCard
-            title="메가커피 서울 신림점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="29°C"
-          />
-          <FavoriteCard
-            title="스타벅스 강남역점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="31°C"
-          />{" "}
-          <FavoriteCard
-            title="스타벅스 강남역점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="31°C"
-          />
-          <FavoriteCard
-            title="스타벅스 강남역점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="31°C"
-          />
-          <FavoriteCard
-            title="스타벅스 강남역점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="31°C"
-          />{" "}
-          <FavoriteCard
-            title="스타벅스 강남역점"
-            subtitle="카페 | 음료점업 · 모집 중"
-            temp="31°C"
-          />
+          {items.map((item) => (
+            <FavoriteCard
+              key={item.id}
+              title={item.title}
+              subtitle={item.subtitle}
+              temp={item.temp}
+              liked={!!likes[item.id]}
+              onToggleHeart={() => toggleLike(item.id)}
+              onOpen={() => openDetail(item)}
+            />
+          ))}
         </div>
       </div>
     </div>
