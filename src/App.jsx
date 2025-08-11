@@ -14,6 +14,7 @@ import MatchOwner from "./pages/owner/Match";
 import ReviewOwner from "./pages/owner/Review/indes";
 import ReportOwner from "./pages/owner/Report/indesx";
 import Request from "./pages/owner/Request";
+import DetailOwner from "./pages/owner/Detail";
 
 import OnboardingStudent from "./pages/student/OnBoarding";
 import DashStudent from "./pages/student/Dash";
@@ -27,6 +28,7 @@ import FeedbackStudent from "./pages/student/Feedback";
 import ReviewStudent from "./pages/student/Review";
 import ReportStudent from "./pages/student/Report";
 import Apply from "./pages/student/Apply";
+import DetailStudent from "./pages/student/Detail";
 
 function App() {
   return (
@@ -49,6 +51,7 @@ function App() {
         <Route path="/owner/review" element={<ReviewOwner />} />
         <Route path="/owner/report" element={<ReportOwner />} />
         <Route path="/owner/request" element={<Request />} />
+        <Route path="/owner/detail" element={<DetailOwner />} />
 
         {/* Student (대학생) */}
         <Route path="/student/onboarding" element={<OnboardingStudent />} />
@@ -63,6 +66,7 @@ function App() {
         <Route path="/student/review" element={<ReviewStudent />} />
         <Route path="/student/report" element={<ReportStudent />} />
         <Route path="/student/apply" element={<Apply />} />
+        <Route path="/student/detail" element={<DetailStudent />} />
       </Routes>
     </BrowserRouter>
   );
