@@ -15,6 +15,7 @@ import ReviewOwner from "./pages/owner/Review/indes";
 import ReportOwner from "./pages/owner/Report/indesx";
 import Request from "./pages/owner/Request";
 import DetailOwner from "./pages/owner/Detail";
+import WriteOwner from "./pages/owner/Write";
 
 import OnboardingStudent from "./pages/student/OnBoarding";
 import DashStudent from "./pages/student/Dash";
@@ -52,6 +53,7 @@ function App() {
         <Route path="/owner/report" element={<ReportOwner />} />
         <Route path="/owner/request" element={<Request />} />
         <Route path="/owner/detail" element={<DetailOwner />} />
+        <Route path="/owner/write" element={<WriteOwner />} />
 
         {/* Student (대학생) */}
         <Route path="/student/onboarding" element={<OnboardingStudent />} />
