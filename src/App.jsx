@@ -33,6 +33,9 @@ import DetailStudent from "./pages/student/Detail";
 import ChatRoomOwner from "./pages/owner/ChatRoom";
 import ChatRoomStudent from "./pages/student/ChatRoom";
 
+// [ADD] 푸터 포함 레이아웃
+import Layout from "./layouts/Layout";
+
 function App() {
   return (
     <BrowserRouter>
@@ -41,6 +44,44 @@ function App() {
         <Route path="/" element={<Start />} />
         <Route path="/login" element={<Login />} />
         <Route path="/select" element={<Select />} />
+
+        {/* [ADD] Owner 레이아웃 라우트 (푸터 자동 포함) */}
+        <Route path="/owner" element={<Layout role="owner" />}>
+          <Route index element={<DashOwner />} /> {/* /owner → 대시 */}
+          <Route path="onboarding" element={<OnboardingOwner />} />
+          <Route path="dash" element={<DashOwner />} />
+          <Route path="notice" element={<NoticeOwner />} />
+          <Route path="heart" element={<HeartOwner />} />
+          <Route path="my" element={<MyOwner />} />
+          <Route path="chat" element={<ChatOwner />} />
+          <Route path="chat/:roomId" element={<ChatRoomOwner />} />
+          <Route path="search" element={<SearchOwner />} />
+          <Route path="match" element={<MatchOwner />} />
+          <Route path="review" element={<ReviewOwner />} />
+          <Route path="report" element={<ReportOwner />} />
+          <Route path="request" element={<Request />} />
+          <Route path="detail" element={<DetailOwner />} />
+          <Route path="write" element={<WriteOwner />} />
+        </Route>
+
+        {/* [ADD] Student 레이아웃 라우트 (푸터 자동 포함) */}
+        <Route path="/student" element={<Layout role="student" />}>
+          <Route index element={<DashStudent />} /> {/* /student → 대시 */}
+          <Route path="onboarding" element={<OnboardingStudent />} />
+          <Route path="dash" element={<DashStudent />} />
+          <Route path="notice" element={<NoticeStudent />} />
+          <Route path="heart" element={<HeartStudent />} />
+          <Route path="my" element={<MyStudent />} />
+          <Route path="chat" element={<ChatStudent />} />
+          <Route path="chat/:roomId" element={<ChatRoomStudent />} />
+          <Route path="search" element={<SearchStudent />} />
+          <Route path="match" element={<MatchStudent />} />
+          <Route path="feedback" element={<FeedbackStudent />} />
+          <Route path="review" element={<ReviewStudent />} />
+          <Route path="report" element={<ReportStudent />} />
+          <Route path="apply" element={<Apply />} />
+          <Route path="detail" element={<DetailStudent />} />
+        </Route>
 
         {/* Owner (소상공인) */}
         <Route path="/owner/onboarding" element={<OnboardingOwner />} />
