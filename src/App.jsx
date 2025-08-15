@@ -30,6 +30,8 @@ import ReviewStudent from "./pages/student/Review";
 import ReportStudent from "./pages/student/Report";
 import Apply from "./pages/student/Apply";
 import DetailStudent from "./pages/student/Detail";
+import ChatRoomOwner from "./pages/owner/ChatRoom";
+import ChatRoomStudent from "./pages/student/ChatRoom";
 
 function App() {
   return (
@@ -47,6 +49,7 @@ function App() {
         <Route path="/owner/heart" element={<HeartOwner />} />
         <Route path="/owner/my" element={<MyOwner />} />
         <Route path="/owner/chat" element={<ChatOwner />} />
+        <Route path="/owner/chat/:roomId" element={<ChatRoomOwner />} />
         <Route path="/owner/search" element={<SearchOwner />} />
         <Route path="/owner/match" element={<MatchOwner />} />
         <Route path="/owner/review" element={<ReviewOwner />} />
@@ -62,6 +65,7 @@ function App() {
         <Route path="/student/heart" element={<HeartStudent />} />
         <Route path="/student/my" element={<MyStudent />} />
         <Route path="/student/chat" element={<ChatStudent />} />
+        <Route path="/student/chat/:roomId" element={<ChatRoomStudent />} />
         <Route path="/student/search" element={<SearchStudent />} />
         <Route path="/student/match" element={<MatchStudent />} />
         <Route path="/student/feedback" element={<FeedbackStudent />} />
