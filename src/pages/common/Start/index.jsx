@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import StartLogo from "../../../images/Start/Startlogo.svg";
+import StartLogo from "../../../images/start/Startlogo.svg";
 
 const Start = () => {
   return (
@@ -19,9 +19,9 @@ const Container = styled.div`
   height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center; 
+  justify-content: center;
   align-items: center;
-  background-color: #0080FF;
+  background-color: #0080ff;
   box-sizing: border-box;
   padding: 0 20px;
 `;
