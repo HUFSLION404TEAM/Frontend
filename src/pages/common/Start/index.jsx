@@ -1,7 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import StartLogo from "../../../images/start/Startlogo.svg";
-
+import StartLogo from "../../../images/Start/Startlogo.svg";
 
 const Start = () => {
   return (
