@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
+
 const containerStyle = {
   display: 'flex',
   justifyContent: 'center',
@@ -14,7 +15,7 @@ const containerStyle = {
 
 const frameStyle = {
   width: 390,
-  minHeight: '1400px',
+  height: 844,
   backgroundColor: "#FFFFFF",
   position: "relative",
   overflow: "hidden",
@@ -60,73 +61,82 @@ const headerTitleStyle = {
 const mainContentStyle = {
     display: 'flex',
     width: '390px',
+    height: 'px',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '34px 30px 121px 30px',
-    marginTop: 0,
+    marginTop: '42px',
     marginBottom: 0,
 };
 
-//형식
-const formStyle = {
-  width: '329px',
-  height: "51px",
-  alignSelf: "stretch",
-  backgroundColor: 'black'
-  };
-
-const inputGroupStyle = {
-  display : 'flex',
-  width: '329px',
+const questionContainerStyle = {
+  display: 'flex',
   flexDirection: 'column',
-  gap: '12px',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  width: '361px',
+  height: '100px',
+  gap: '8px',
+  marginLeft: '29px',
   marginTop: 0,
   marginBottom: 0,
-  backgroundColor: 'orange',
-}
+};
 
-const labelStyle = {
-  color: "#000",
+//질문
+const mainQuestionStyle = {
   fontFamily: "Pretendard",
-  fontSize: "16px",
+  fontSize: "25px",
   fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "20px",
-  letterSpacing: "-0.5px",
-  marginTop: '21px',
+  fontWeight: 700,
+  lineHeight: "36px",
+  marginTop: 0,
   marginBottom: 0,
-  backgroundColor: 'green',
 };
 
-const inputTextStyle = {
-  alignSelf: "stretch",
-  borderRadius: "8px",
-  border: "0.5px solid #1A96FE",
-  padding: '12px',
-  fontSize: '12px',
+const subQuestionStyle = {
+  color: "#7A89A5",
   fontFamily: "Pretendard",
-  //resize: 'vertical', // 세로 크기만 조절 가능
-  outline: 'none',
-  transition: 'border-color 0.2s',
-
-  backgorundColor: 'yellow',
+  fontSize: "14px",
+  fontStyle: "normal",
+  fontWeight: 400,
+  lineHeight: "20px",
+  marginTop: 0,
+  marginBottom: 0,
 };
 
+//입력
+const inputContainerStyle = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  width: '100%',
+  marginTop: '50px',
+  marginBottom: 0,
+};
+
+const inputStyle = {
+  width: '318px',
+  border: 'none',
+  borderBottom: '1px solid #0080FF',
+  fontSize: '20px',
+  color: "#343539",
+  fontFamily: "Pretendard",
+  fontSize: "20px",
+  fontStyle: "normal",
+  fontWeight: 400,
+  lineHeight: "normal",
+};
 
 //다음버튼
 const buttonAreaStyle = {
-  position: 'absolute',
-  bottom: '42px',
-  left: '50%',          // 왼쪽에서 50% 지점으로 이동
-  transform: 'translateX(-50%)', // 자체 너비의 50%만큼 왼쪽으로 이동하여 중앙 정렬
   display: "flex",
   width: "220px",
+  height: '73px',
   flexDirection: "column",
   justifyContent: "center",
   alignItems: "center",
   gap: "8px",
-  backgroundColor: 'blue',
+  marginTop: '420px',
 };
 
 const nextButtonStyle = {
@@ -173,51 +183,19 @@ const nextSubButtonStyle = {
 };
 
 
-const formFields = [
-  { id: 'projectIntro', label: '1. 프로젝트 소개', width: '329px', height: '51px' },
-  { id: 'projectSummary', label: '2. 프로젝트 개요', width: '329px', height: '51px' },
-  { id: 'tasksDone', label: '3. 진행한 일', width: '329px', height: '51px' },
-  { id: 'process', label: '4. 과정', width: '329px', height: '51px' },
-  { id: 'results', label: '5. 결과물', width: '329px', height: '51px' },
-  { id: 'growthPoints', label: '6. 성장한 점', width: '329px', height: '51px' },
-  { id: 'mySkills', label: '7. 나의 역량', width: '329px', height: '51px' },
-  { id: 'awards', label: '수상경력', width: '329px', height: '145px' },
-];
-
 
 //페이지 구조
-export default function CreatePortfolioDetailsPage() {
+export default function OnboardingNamePage() {
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    projectIntro: '',
-    projectSummary: '',
-    tasksDone: '',
-    process: '',
-    results: '',
-    growthPoints: '',
-    mySkills: '',
-    awards: '',
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-  const handleNext = () => {
-      console.log('입력된 포트폴리오 데이터:', formData);
-      navigate('../src/pages/student/OnBoarding/step11.jsx'); 
-    }
+  const [name, setName] = useState('');
 
 return (
     <div style = {containerStyle}>
         <style>
           {`
-            .portfolio-textarea:focus {
-            border-color: #5A87FF;
+            .name-input:focus {
+              outline: none;
+              border-bottom-color: #5A87FF; /* 포커스 시 밑줄 색상 변경은 유지 */
             }
           `}
         </style>
@@ -230,23 +208,30 @@ return (
                 <h1 style = {headerTitleStyle}>포트폴리오</h1>
             </header>
 
-            <main style={mainContentStyle}>
-              <div style={formStyle}>
-                {/* formFields 배열을 순회하며 입력 필드를 동적으로 생성 */}
-                {formFields.map(field => (
-                <div key={field.id} style={inputGroupStyle}>
-                  <label htmlFor={field.id} style={labelStyle}>{field.label}</label>
-                  <textarea
-                    id={field.id}
-                    name={field.id}
-                    className="portfolio-textarea"
-                    value={formData[field.id]}
-                    onChange={handleChange}
-                    style={{...inputTextStyle, height: field.height}}
-                  />
-                </div>
-                ))}
+            <main style = {mainContentStyle}>
+              <div style = {questionContainerStyle}>
+                <h2 style = {mainQuestionStyle}>
+                  기획자님을<br />
+                  <span style = {{color: '#0080FF' }}>활동경력</span>
+                  을 입력해주세요!
+                </h2>
+                <h2 style = {subQuestionStyle}>
+                  포트폴리오 생성을 위해 필요합니다.
+                </h2>
               </div>
+
+              <div style = {inputContainerStyle}>
+                <input
+                  id="name-input"
+                  type="text"
+                  className = 'name-input'
+                  value={name}
+                  placeholder = '활동경력'
+                  onChange={(e) => setName(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              
               <section style = {buttonAreaStyle}>
                 <button style = {nextButtonStyle}>다음</button>
                 <button style = {nextSubButtonStyle}>다음에 입력하기</button>

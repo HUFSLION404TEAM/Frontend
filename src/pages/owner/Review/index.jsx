@@ -313,7 +313,7 @@ return (
             alt = "프로필"
             style = {userImageStyle}
           />
-          <p style = {userNameStyle}>컴포즈커피 용인외대점</p>
+          <p style = {userNameStyle}>한국외대 김대학</p>
         </div>
 
         <section style = {rateStyle}>
@@ -361,7 +361,7 @@ return (
           />
           <div style =  {noticeTextAreaStyle}>
             <span style = {noticeTextStyle}>
-              작성해 주시는 후기는 소상공인들에게 큰 힘이 됩니다.
+              작성해 주시는 후기는 학생들에게 큰 힘이 됩니다.
             </span>
             <span style = {noticeTextStyle}>
               고객님들의 격려와 지적에 보다 나은 결과로 보답하겠습니다.

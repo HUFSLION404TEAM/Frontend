@@ -362,7 +362,7 @@ export default function CustomDropdown() {
         <main style = {mainContentStyle}>
           <div style = {targetInfoStyle}>
             <div style = {targetImageStyle}/>
-            <h2 style = {targetNameStyle}>컴포즈커피 한국외대점</h2>
+            <h2 style = {targetNameStyle}>한국외대 김대학</h2>
           </div>
 
           <section style =  {reportSectionStyle}>
@@ -428,3 +428,11 @@ export default function CustomDropdown() {
     </div>
   )
 };
+
+
+
+
+
+
+
+
