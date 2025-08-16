@@ -1,3 +1,4 @@
+// pages/owner/Dash/index.jsx (또는 기존 DashOwner 파일 경로)
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeartIconSrc from "../../../assets/Heart.svg";
@@ -6,10 +7,11 @@ import AlarmIconSrc from "../../../assets/Alarm.svg";
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
+import CalendarScr from "../../../assets/Calendar.svg"; // ✅ 캘린더 아이콘 사용
 
 const STATUS_H = 44; // 상태바
 const HEADER_H = 45; // 헤더
-const INFO_H = 120; // 로고 아래 텍스트 블록: 겹침 방지 여유
+const INFO_H = 120; // 로고 아래 텍스트 블록
 const FILTER_H = 44; // 필터 바
 const SIDE_GAP = 10; // 좌우 여백
 
@@ -105,7 +107,7 @@ const infoBlockStyle = {
   alignItems: "flex-start",
   justifyContent: "center",
   gap: 12,
-  zIndex: 2, // 필터보다 위
+  zIndex: 2,
 };
 const infoTitleStyle = {
   color: "#111",
@@ -123,10 +125,10 @@ const infoSubStyle = {
   lineHeight: "150%",
 };
 
-// ===== 필터 바(작은 칩 + 글쓰기 버튼) =====
+// ===== 필터 바 (기존 소상공인 스타일 유지) =====
 const filterBarStyle = {
   position: "absolute",
-  top: STATUS_H + HEADER_H + 10 + INFO_H + 12, // 텍스트 블록 아래로 충분히 내림
+  top: STATUS_H + HEADER_H + 10 + INFO_H + 12,
   left: 10,
   right: 0,
   height: FILTER_H - 40,
@@ -136,9 +138,13 @@ const filterBarStyle = {
   padding: "0 10px",
   background: "#FFF",
   boxSizing: "border-box",
-  zIndex: 1, // infoBlock보다 아래
+  zIndex: 1,
 };
-const filterRowStyle = { display: "inline-flex", alignItems: "center", gap: 6 };
+const filterRowStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+};
 const chipStyle = {
   display: "flex",
   alignItems: "center",
@@ -153,15 +159,13 @@ const chipStyle = {
   color: "#111",
   cursor: "pointer",
 };
-// 말줄임(폭은 기존 자동폭 유지)
 const chipLabelStyle = {
   display: "inline-block",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  maxWidth: 30,
+  maxWidth: 35,
 };
-
 const writeBtnStyle = {
   height: 24,
   padding: "0 12px",
@@ -176,191 +180,118 @@ const writeBtnStyle = {
   justifyContent: "center",
   border: "none",
   outline: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-  MozAppearance: "none",
-  boxShadow: "none",
 };
 
-// ===== 리스트(2열 그리드) =====
-const listTop = STATUS_H + HEADER_H + 10 + INFO_H + 12 + FILTER_H;
-const listWrapStyle = {
+// ===== 리스트(학생 스타일로 변경: 세로 1열 카드) =====
+const listTop = STATUS_H + HEADER_H + 10 + INFO_H + FILTER_H;
+const listContainerStyle = {
   position: "absolute",
   top: listTop,
   bottom: 24,
   left: "50%",
   transform: "translateX(-50%)",
-  width: 348, // 167 + 167 + 14 = 348
+  width: 348, // 학생 페이지와 동일 폭
   overflowY: "auto",
-  display: "grid",
-  gridTemplateColumns: "167px 167px",
-  columnGap: 14,
-  rowGap: 10, // 기존 값 유지
-  alignContent: "start",
+  display: "flex",
+  flexDirection: "column",
+  gap: 20,
 };
-const miniCardStyle = {
+
+// 카드 스타일 (학생 ShopCard 스타일 차용)
+const cardStyle = {
   position: "relative",
-  width: 167,
-  height: 67,
+  display: "flex",
+  alignItems: "center",
+  gap: 20,
+  height: 112,
+  padding: 12,
   borderRadius: 16,
   background:
     "linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.60) 100%)",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-  display: "flex",
-  alignItems: "center",
-  padding: 10,
+  boxShadow: "3px 3px 8px rgba(0, 0, 0, 0.08)",
   boxSizing: "border-box",
-  cursor: "pointer",
 };
-const miniThumb = {
-  width: 44,
-  height: 44,
+const thumbStyle = {
+  width: 88,
+  height: 88,
   borderRadius: 12,
   background: "#A6A6A6",
   flexShrink: 0,
 };
-const miniInfoCol = {
-  marginLeft: 10,
+const infoCol = {
   display: "flex",
   flexDirection: "column",
-  gap: 2,
-  overflow: "hidden",
+  gap: 6,
+  width: 190,
+  alignItems: "flex-start",
 };
 const nameRow = {
   display: "flex",
   alignItems: "baseline",
-  gap: 4,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
+  gap: 6,
 };
 const nameStyle = {
   color: "#111",
   fontFamily: "Pretendard",
-  fontSize: 14,
+  fontSize: 16,
   fontWeight: 700,
+  lineHeight: "140%",
+  letterSpacing: "-0.4px",
 };
 const ageStyle = {
   color: "#111",
   fontFamily: "Pretendard",
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 500,
 };
 const fieldStyle = {
   color: "#111",
   fontFamily: "Pretendard",
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 500,
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
+  maxWidth: 190,
 };
-const tempRowMini = {
+const periodRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 4,
+  fontSize: 12,
+  color: "#767676",
+};
+const tempRowStyle = {
   display: "flex",
   alignItems: "center",
   gap: 4,
   color: "#767676",
-  fontSize: 11,
-  marginTop: 0,
+  fontSize: 12,
 };
-const likeMini = {
+const likeBtnStyle = {
   position: "absolute",
-  top: 5,
-  right: 10,
-  width: 20,
-  height: 20,
-};
-
-// ===== 바텀 시트(번개장터 스타일) =====
-const sheetOverlayStyle = {
-  position: "absolute",
-  inset: 0,
-  background: "rgba(0,0,0,0.35)",
-  zIndex: 5,
-};
-const sheetWrapStyle = (open) => ({
-  position: "absolute",
-  left: 0,
-  right: 0,
-  bottom: 0,
-  height: 520,
-  background: "#FFF",
-  borderTopLeftRadius: 18,
-  borderTopRightRadius: 18,
-  boxShadow: "0 -8px 20px rgba(0,0,0,0.15)",
-  zIndex: 6,
-  transform: `translateY(${open ? 0 : 560}px)`,
-  transition: "transform 200ms ease",
-  display: "flex",
-  flexDirection: "column",
-});
-const sheetHeaderStyle = {
-  padding: "14px 16px 8px 16px",
-  borderBottom: "1px solid #EEE",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-};
-const sheetTitleStyle = { fontSize: 18, fontWeight: 700 };
-const sheetDoneBtn = {
-  fontSize: 14,
-  fontWeight: 600,
-  color: "#0080FF",
+  top: 12,
+  right: 12,
+  width: 24,
+  height: 24,
   cursor: "pointer",
 };
-const grabberStyle = {
-  alignSelf: "center",
-  width: 40,
-  height: 4,
-  borderRadius: 2,
-  background: "#D9D9D9",
-  marginTop: 8,
-};
-const sheetScrollStyle = {
-  flex: 1,
-  overflowY: "auto",
-  padding: "8px 16px 24px 16px",
-};
-const sectionTitleStyle = {
-  fontSize: 15,
-  fontWeight: 700,
-  margin: "14px 0 10px",
-};
-const optionRowStyle = (active) => ({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "12px 6px",
-  fontSize: 15,
-  borderBottom: "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
-  cursor: "pointer",
-  color: active ? "#111" : "#222",
-  background: active ? "rgba(0,128,255,0.06)" : "transparent",
-  borderRadius: 8,
-});
-const checkIcon = (active) => ({
-  width: 16,
-  height: 16,
-  borderRadius: 8,
-  border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
-  background: active ? "#0080FF" : "transparent",
-});
 
-// ===== 카드 컴포넌트 =====
+// ===== 카드 컴포넌트 (컨텐츠는 기존: 이름/나이/전공/온도/찜, + 기간옵션) =====
 function CandidateCard({
   name = "이름",
   age = "나이",
   field = "전공, 자신 있는 분야",
   temp = "36.5°C",
-  liked = false, // ← 초기 찜 상태로만 사용(프롭)
-  onOpen, // ← 카드 클릭 시 이동은 그대로
+  liked = false, // 초기 찜 상태
+  period = "협의 가능", // 학생 스타일에 맞춘 캘린더 라인(옵션)
+  onOpen, // 카드 클릭 시 이동
 }) {
-  // 🔹 내부 토글 상태 (초기값은 props.liked)
   const [isLiked, setIsLiked] = React.useState(liked);
 
   return (
     <div
-      style={miniCardStyle}
+      style={cardStyle}
       onClick={onOpen}
       role="button"
       tabIndex={0}
@@ -371,39 +302,46 @@ function CandidateCard({
         }
       }}
     >
-      <div style={miniThumb} />
-      <div style={miniInfoCol}>
+      {/* 썸네일 */}
+      <div style={thumbStyle} />
+
+      {/* 텍스트 영역 */}
+      <div style={infoCol}>
         <div style={nameRow}>
           <span style={nameStyle}>{name}</span>
           <span style={ageStyle}>{age}</span>
         </div>
         <div style={fieldStyle}>{field}</div>
-        <div style={tempRowMini}>
-          <img src={TemperatureIconSrc} alt="온도" width={9} height={9} />
+
+        {/* 캘린더 라인 (옵션) */}
+        <div style={periodRowStyle}>
+          <img src={CalendarScr} alt="기간" width={12} height={12} />
+          <span>{period}</span>
+        </div>
+
+        {/* 온도 */}
+        <div style={tempRowStyle}>
+          <img src={TemperatureIconSrc} alt="온도" width={12} height={12} />
           <span>{temp}</span>
         </div>
       </div>
 
-      {/* 🔹 하트 토글: 클릭 시 카드 이동 막고 토글 */}
+      {/* 하트 토글 */}
       <img
         src={isLiked ? HeartIconSrc : EmptyHeartSrc}
         alt={isLiked ? "찜 해제" : "찜하기"}
-        style={{ ...likeMini, cursor: "pointer" }}
+        style={likeBtnStyle}
         onClick={(e) => {
-          e.stopPropagation(); // 카드 onClick 막기
-          setIsLiked((v) => !v); // 토글
+          e.stopPropagation();
+          setIsLiked((v) => !v);
         }}
         onKeyDown={(e) => {
-          // 접근성(선택): 하트에 포커스가 있을 때 Space/Enter로 토글
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             e.stopPropagation();
             setIsLiked((v) => !v);
           }
         }}
-        tabIndex={0}
-        role="button"
-        aria-pressed={isLiked}
       />
     </div>
   );
@@ -413,7 +351,7 @@ function CandidateCard({
 export default function DashOwner() {
   const navigate = useNavigate();
 
-  // ---- 필터 상태 (칩 라벨 유지 + 시트 공유) ----
+  // ---- 필터 상태 ----
   const [area, setArea] = useState("우만동 외");
   const [price, setPrice] = useState("가격");
   const [category, setCategory] = useState("카테고리");
@@ -421,7 +359,7 @@ export default function DashOwner() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTitle, setSheetTitle] = useState("필터");
-  const [openSection, setOpenSection] = useState(null); // "area" | "price" | "category" | "sort"
+  const [openSection, setOpenSection] = useState(null);
 
   const areaRef = useRef(null);
   const priceRef = useRef(null);
@@ -462,6 +400,8 @@ export default function DashOwner() {
     <div style={containerStyle}>
       <div style={frameStyle}>
         <div style={statusBarStyle} />
+
+        {/* 헤더 */}
         <div style={headerStyle}>
           <div style={logoWrapStyle}>
             <span style={logoTextStyle}>UniBiz</span>
@@ -487,6 +427,7 @@ export default function DashOwner() {
           </div>
         </div>
 
+        {/* 로고 밑 텍스트 */}
         <div style={infoBlockStyle}>
           <div style={infoTitleStyle}>
             BHC 용인외대점을 위한
@@ -498,7 +439,7 @@ export default function DashOwner() {
           </div>
         </div>
 
-        {/* 필터 바 (칩 폭/위치 그대로, 말줄임만 적용) */}
+        {/* 필터 바 (기존) */}
         <div style={filterBarStyle}>
           <div style={filterRowStyle}>
             <div style={chipStyle} onClick={() => openSheet("area")}>
@@ -531,119 +472,67 @@ export default function DashOwner() {
           </button>
         </div>
 
-        {/* 리스트(2열) - 현재는 예시 데이터 없이 기본 카드 사용 */}
-        <div style={listWrapStyle}>
+        {/* ✅ 리스트(학생 스타일 적용) */}
+        <div style={listContainerStyle}>
           <CandidateCard
+            name="이름"
+            age="25"
+            field="전공, 자신 있는 분야"
+            temp="36.5°C"
             liked
+            period="2025.02 ~ 2025.06"
             onOpen={() => {
               if (DETAIL_PATH)
                 navigate(DETAIL_PATH, {
                   state: {
                     name: "이름",
-                    age: "나이",
+                    age: "25",
                     field: "전공, 자신 있는 분야",
                     temp: "36.5°C",
                     liked: true,
+                    period: "2025.02 ~ 2025.06",
                   },
                 });
             }}
           />
           <CandidateCard
+            name="김지원"
+            age="23"
+            field="마케팅/콘텐츠 기획"
+            temp="37.1°C"
+            liked={false}
+            period="협의 가능"
             onOpen={() => {
               if (DETAIL_PATH)
                 navigate(DETAIL_PATH, {
                   state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
+                    name: "김지원",
+                    age: "23",
+                    field: "마케팅/콘텐츠 기획",
+                    temp: "37.1°C",
                     liked: false,
+                    period: "협의 가능",
                   },
                 });
             }}
           />
           <CandidateCard
+            name="박서준"
+            age="24"
+            field="영상 촬영/편집"
+            temp="36.9°C"
+            liked={false}
+            period="2025.03 ~ 2025.04"
             onOpen={() => {
               if (DETAIL_PATH)
                 navigate(DETAIL_PATH, {
                   state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
+                    name: "박서준",
+                    age: "24",
+                    field: "영상 촬영/편집",
+                    temp: "36.9°C",
                     liked: false,
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            liked
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: true,
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: false,
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: false,
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            liked
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: true,
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "나이",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: false,
+                    period: "2025.03 ~ 2025.04",
                   },
                 });
             }}
@@ -653,38 +542,118 @@ export default function DashOwner() {
         {/* ===== Bottom Sheet (필터) ===== */}
         {sheetOpen && (
           <div
-            style={sheetOverlayStyle}
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              zIndex: 5,
+            }}
             onClick={() => setSheetOpen(false)}
             aria-hidden
           />
         )}
-        <div style={sheetWrapStyle(sheetOpen)} aria-hidden={!sheetOpen}>
-          <div style={grabberStyle} />
-          <div style={sheetHeaderStyle}>
-            <div style={sheetTitleStyle}>{sheetTitle}</div>
-            <div style={sheetDoneBtn} onClick={() => setSheetOpen(false)}>
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 520,
+            background: "#FFF",
+            borderTopLeftRadius: 18,
+            borderTopRightRadius: 18,
+            boxShadow: "0 -8px 20px rgba(0,0,0,0.15)",
+            zIndex: 6,
+            transform: `translateY(${sheetOpen ? 0 : 560}px)`,
+            transition: "transform 200ms ease",
+            display: "flex",
+            flexDirection: "column",
+          }}
+          aria-hidden={!sheetOpen}
+        >
+          <div
+            style={{
+              alignSelf: "center",
+              width: 40,
+              height: 4,
+              borderRadius: 2,
+              background: "#D9D9D9",
+              marginTop: 8,
+            }}
+          />
+          <div
+            style={{
+              padding: "14px 16px 8px 16px",
+              borderBottom: "1px solid #EEE",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{sheetTitle}</div>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "#0080FF",
+                cursor: "pointer",
+              }}
+              onClick={() => setSheetOpen(false)}
+            >
               완료
             </div>
           </div>
 
-          <div style={sheetScrollStyle}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "8px 16px 24px 16px",
+            }}
+          >
             {/* 동네 */}
             <div ref={areaRef}>
-              <div style={sectionTitleStyle}>동네</div>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                동네
+              </div>
               {["우만동 외", "인계동", "영통구", "장안구", "수원 전체"].map(
                 (label) => {
                   const active = area === label;
                   return (
                     <div
                       key={label}
-                      style={optionRowStyle(active)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 6px",
+                        fontSize: 15,
+                        borderBottom:
+                          "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                        cursor: "pointer",
+                        color: active ? "#111" : "#222",
+                        background: active
+                          ? "rgba(0,128,255,0.06)"
+                          : "transparent",
+                        borderRadius: 8,
+                      }}
                       onClick={() => {
                         setArea(label);
                         setSheetTitle("동네");
                       }}
                     >
                       <span>{label}</span>
-                      <div style={checkIcon(active)} />
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                          background: active ? "#0080FF" : "transparent",
+                        }}
+                      />
                     </div>
                   );
                 }
@@ -693,7 +662,11 @@ export default function DashOwner() {
 
             {/* 가격 */}
             <div ref={priceRef}>
-              <div style={sectionTitleStyle}>가격</div>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                가격
+              </div>
               {[
                 "가격",
                 "₩0~₩10,000",
@@ -705,14 +678,36 @@ export default function DashOwner() {
                 return (
                   <div
                     key={label}
-                    style={optionRowStyle(active)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px 6px",
+                      fontSize: 15,
+                      borderBottom:
+                        "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                      cursor: "pointer",
+                      color: active ? "#111" : "#222",
+                      background: active
+                        ? "rgba(0,128,255,0.06)"
+                        : "transparent",
+                      borderRadius: 8,
+                    }}
                     onClick={() => {
                       setPrice(label);
                       setSheetTitle("가격");
                     }}
                   >
                     <span>{label}</span>
-                    <div style={checkIcon(active)} />
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                        background: active ? "#0080FF" : "transparent",
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -720,7 +715,11 @@ export default function DashOwner() {
 
             {/* 카테고리(업종) */}
             <div ref={categoryRef}>
-              <div style={sectionTitleStyle}>카테고리(업종)</div>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                카테고리(업종)
+              </div>
               {[
                 "카테고리",
                 "기획/마케팅",
@@ -733,14 +732,36 @@ export default function DashOwner() {
                 return (
                   <div
                     key={label}
-                    style={optionRowStyle(active)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px 6px",
+                      fontSize: 15,
+                      borderBottom:
+                        "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                      cursor: "pointer",
+                      color: active ? "#111" : "#222",
+                      background: active
+                        ? "rgba(0,128,255,0.06)"
+                        : "transparent",
+                      borderRadius: 8,
+                    }}
                     onClick={() => {
                       setCategory(label);
                       setSheetTitle("카테고리");
                     }}
                   >
                     <span>{label}</span>
-                    <div style={checkIcon(active)} />
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                        background: active ? "#0080FF" : "transparent",
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -748,21 +769,47 @@ export default function DashOwner() {
 
             {/* 정렬 */}
             <div ref={sortRef}>
-              <div style={sectionTitleStyle}>정렬</div>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                정렬
+              </div>
               {["정확도 순", "최신 순", "낮은 가격 순", "높은 가격 순"].map(
                 (label) => {
                   const active = sort === label;
                   return (
                     <div
                       key={label}
-                      style={optionRowStyle(active)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 6px",
+                        fontSize: 15,
+                        borderBottom:
+                          "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                        cursor: "pointer",
+                        color: active ? "#111" : "#222",
+                        background: active
+                          ? "rgba(0,128,255,0.06)"
+                          : "transparent",
+                        borderRadius: 8,
+                      }}
                       onClick={() => {
                         setSort(label);
                         setSheetTitle("정렬");
                       }}
                     >
                       <span>{label}</span>
-                      <div style={checkIcon(active)} />
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                          background: active ? "#0080FF" : "transparent",
+                        }}
+                      />
                     </div>
                   );
                 }
