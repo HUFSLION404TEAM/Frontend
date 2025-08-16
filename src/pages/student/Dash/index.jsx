@@ -1,9 +1,8 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeartIconSrc from "../../../assets/Heart.svg";
 import StarIconSrc from "../../../assets/Star.svg";
 import AlarmIconSrc from "../../../assets/Alarm.svg";
-import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import CalendarScr from "../../../assets/Calendar.svg";
@@ -18,7 +17,7 @@ const INFO_H = 96;
 const FILTER_H = 44;
 const SIDE_GAP = 10;
 
-// ===== 기본 레이아웃 =====
+/* ===== 기본 레이아웃 ===== */
 const containerStyle = {
   overflow: "auto",
   display: "flex",
@@ -27,7 +26,6 @@ const containerStyle = {
   minHeight: "100vh",
   backgroundColor: "#f0f0f0",
 };
-
 const frameStyle = {
   width: 390,
   height: 844,
@@ -37,7 +35,6 @@ const frameStyle = {
   position: "relative",
   overflow: "hidden",
 };
-
 const statusBarStyle = {
   position: "absolute",
   top: 0,
@@ -48,7 +45,7 @@ const statusBarStyle = {
   zIndex: 2,
 };
 
-// ===== 헤더 =====
+/* ===== 헤더 ===== */
 const headerStyle = {
   position: "absolute",
   top: STATUS_H,
@@ -61,14 +58,12 @@ const headerStyle = {
   background: "#FFF",
   zIndex: 3,
 };
-
 const logoWrapStyle = {
   display: "flex",
   alignItems: "center",
   gap: 6,
   marginLeft: 16,
 };
-
 const logoTextStyle = {
   color: "#0080FF",
   fontFamily:
@@ -77,9 +72,7 @@ const logoTextStyle = {
   fontWeight: 400,
   lineHeight: "20px",
 };
-
 const starIconStyle = { width: 16, height: 16, transform: "translateY(-6px)" };
-
 const rightIconsWrap = { position: "relative", width: 64, height: HEADER_H };
 const bellStyle = {
   position: "absolute",
@@ -98,11 +91,11 @@ const heartStyle = {
   cursor: "pointer",
 };
 
-// ===== 로고 밑 텍스트 =====
+/* ===== 로고 밑 텍스트 ===== */
 const infoBlockStyle = {
   position: "absolute",
-  top: STATUS_H + HEADER_H + 15,
-  left: SIDE_GAP + 17,
+  top: STATUS_H + HEADER_H + 20,
+  left: SIDE_GAP + 12,
   width: 212,
   height: INFO_H,
   display: "flex",
@@ -113,7 +106,6 @@ const infoBlockStyle = {
   background: "#FFF",
   zIndex: 2,
 };
-
 const infoTitleStyle = {
   color: "#000",
   fontFamily: "Pretendard, system-ui, -apple-system",
@@ -122,7 +114,6 @@ const infoTitleStyle = {
   lineHeight: "150%",
   letterSpacing: "-0.3px",
 };
-
 const infoSubStyle = {
   color: "#4C4C4C",
   fontFamily: "Pretendard, system-ui, -apple-system",
@@ -132,58 +123,50 @@ const infoSubStyle = {
   letterSpacing: "-0.2px",
 };
 
-// ===== 필터 바 =====
+/* ===== 필터 바 (소상공인 페이지 스타일 적용, 글쓰기 버튼 제외) ===== */
 const filterBarStyle = {
   position: "absolute",
-  top: STATUS_H + HEADER_H + 10 + INFO_H + 12,
-  left: 0,
+  top: STATUS_H + HEADER_H + 10 + INFO_H + 35,
+  left: 10,
   right: 0,
-  height: FILTER_H,
+  height: FILTER_H - 40, // 소상공인 페이지와 동일
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
-  background: "#FFF",
-  borderBottom: "1px solid #EEE",
+  justifyContent: "space-between", // 원본 유지 (우측엔 비워둠)
   padding: "0 10px",
+  background: "#FFF",
   boxSizing: "border-box",
-  zIndex: 2,
+  zIndex: 1,
 };
-
 const filterRowStyle = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 6,
-  width: "auto",
+  gap: 8, // 소상공인 페이지 동일
 };
-
 const chipStyle = {
   display: "flex",
   alignItems: "center",
-  gap: 9,
-  padding: "6px 10px",
+  gap: 6,
+  padding: "5px 9px",
   borderRadius: 10,
   border: "1px solid #0080FF",
   background: "#FFF",
   boxShadow: "0 4px 7px rgba(0,0,0,0.10)",
-  backdropFilter: "blur(7.5px)",
   fontFamily: "Pretendard, system-ui, -apple-system",
-  fontSize: 12,
+  fontSize: 11,
   color: "#111",
   cursor: "pointer",
 };
-
-// (폭은 원래 자동폭 유지, 라벨만 말줄임)
 const chipLabelStyle = {
   display: "inline-block",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  maxWidth: 60, // 아이콘 공간 고려한 텍스트 최대폭
+  maxWidth: 35, // 소상공인 페이지 동일
 };
 
-// ===== 리스트 & 카드 =====
-const listTop = STATUS_H + HEADER_H + 10 + INFO_H + 12 + FILTER_H + 12;
-
+/* ===== 리스트 & 카드 (학생 페이지 원래 레이아웃 유지) ===== */
+const listTop = STATUS_H + HEADER_H + 10 + INFO_H + 12 + FILTER_H + 12; // 기존 값 유지
 const listContainerStyle = {
   position: "absolute",
   top: listTop,
@@ -196,7 +179,6 @@ const listContainerStyle = {
   flexDirection: "column",
   gap: 20,
 };
-
 const cardStyle = {
   position: "relative",
   display: "flex",
@@ -210,7 +192,6 @@ const cardStyle = {
   boxShadow: "3px 3px 8px rgba(0, 0, 0, 0.08)",
   boxSizing: "border-box",
 };
-
 const thumbStyle = {
   width: 88,
   height: 88,
@@ -222,7 +203,6 @@ const thumbStyle = {
   position: "relative",
   flexShrink: 0,
 };
-
 const distancePill = {
   position: "absolute",
   left: 6,
@@ -237,7 +217,6 @@ const distancePill = {
   alignItems: "center",
   gap: 6,
 };
-
 const infoCol = {
   display: "flex",
   flexDirection: "column",
@@ -245,7 +224,6 @@ const infoCol = {
   width: 190,
   alignItems: "flex-start",
 };
-
 const titleText = {
   color: "#111",
   fontFamily: "Pretendard",
@@ -254,7 +232,6 @@ const titleText = {
   lineHeight: "140%",
   letterSpacing: "-0.4px",
 };
-
 const likeBtnStyle = {
   position: "absolute",
   top: 12,
@@ -263,13 +240,11 @@ const likeBtnStyle = {
   height: 24,
   cursor: "pointer",
 };
-
 const statusTextStyle = {
   color: "#0080FF",
   fontSize: 12,
   fontWeight: 600,
 };
-
 const periodRowStyle = {
   display: "flex",
   alignItems: "center",
@@ -278,14 +253,13 @@ const periodRowStyle = {
   color: "#767676",
 };
 
-// ===== 바텀 시트 =====
+/* ===== 바텀 시트 ===== */
 const sheetOverlayStyle = {
   position: "absolute",
   inset: 0,
   background: "rgba(0,0,0,0.35)",
   zIndex: 5,
 };
-
 const sheetWrapStyle = (open) => ({
   position: "absolute",
   left: 0,
@@ -302,7 +276,6 @@ const sheetWrapStyle = (open) => ({
   display: "flex",
   flexDirection: "column",
 });
-
 const sheetHeaderStyle = {
   padding: "14px 16px 8px 16px",
   borderBottom: "1px solid #EEE",
@@ -310,19 +283,13 @@ const sheetHeaderStyle = {
   alignItems: "center",
   justifyContent: "space-between",
 };
-
-const sheetTitleStyle = {
-  fontSize: 18,
-  fontWeight: 700,
-};
-
+const sheetTitleStyle = { fontSize: 18, fontWeight: 700 };
 const sheetDoneBtn = {
   fontSize: 14,
   fontWeight: 600,
   color: "#0080FF",
   cursor: "pointer",
 };
-
 const grabberStyle = {
   alignSelf: "center",
   width: 40,
@@ -331,19 +298,16 @@ const grabberStyle = {
   background: "#D9D9D9",
   marginTop: 8,
 };
-
 const sheetScrollStyle = {
   flex: 1,
   overflowY: "auto",
   padding: "8px 16px 24px 16px",
 };
-
 const sectionTitleStyle = {
   fontSize: 15,
   fontWeight: 700,
   margin: "14px 0 10px",
 };
-
 const optionRowStyle = (active) => ({
   display: "flex",
   alignItems: "center",
@@ -356,7 +320,6 @@ const optionRowStyle = (active) => ({
   background: active ? "rgba(0,128,255,0.06)" : "transparent",
   borderRadius: 8,
 });
-
 const checkIcon = (active) => ({
   width: 16,
   height: 16,
@@ -365,7 +328,7 @@ const checkIcon = (active) => ({
   background: active ? "#0080FF" : "transparent",
 });
 
-// ===== 카드 =====
+/* ===== 카드 컴포넌트 ===== */
 function ShopCard({
   title = "디지털 메뉴 SNS 홍보 구인",
   status = "모집중",
@@ -374,7 +337,7 @@ function ShopCard({
   category = "카페",
   distance = "n km 떨어짐",
   initialLiked = false,
-  onOpen, // ← 카드 클릭 시 이동
+  onOpen,
 }) {
   const [liked, setLiked] = useState(initialLiked);
 
@@ -391,14 +354,12 @@ function ShopCard({
         }
       }}
     >
-      {/* 썸네일 + 거리 */}
       <div style={thumbStyle}>
         <div style={distancePill}>
           <span>{distance}</span>
         </div>
       </div>
 
-      {/* 텍스트 영역 */}
       <div style={infoCol}>
         <div style={statusTextStyle}>{status}</div>
         <div style={titleText}>{title}</div>
@@ -411,13 +372,12 @@ function ShopCard({
         </div>
       </div>
 
-      {/* 좋아요(리스트 토글) */}
       <img
         src={liked ? HeartIconSrc : EmptyHeartSrc}
         alt="좋아요"
         style={likeBtnStyle}
         onClick={(e) => {
-          e.stopPropagation(); // 카드 이동 방지
+          e.stopPropagation();
           setLiked((v) => !v);
         }}
       />
@@ -425,7 +385,7 @@ function ShopCard({
   );
 }
 
-// ===== 메인 =====
+/* ===== 메인 ===== */
 export default function DashStudent() {
   const navigate = useNavigate();
 
@@ -438,16 +398,15 @@ export default function DashStudent() {
   // 바텀시트
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTitle, setSheetTitle] = useState("필터");
-  const [openSection, setOpenSection] = useState(null); // "area" | "price" | "category" | "sort"
+  const [openSection, setOpenSection] = useState(null);
 
-  // 섹션 refs (해당 섹션으로 스크롤)
+  // 섹션 refs
   const areaRef = useRef(null);
   const priceRef = useRef(null);
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // 칩 클릭 시: 시트 열고 해당 섹션으로 스크롤
   const openSheet = (section) => {
     setOpenSection(section);
     const titleMap = {
@@ -460,7 +419,6 @@ export default function DashStudent() {
     setSheetOpen(true);
   };
 
-  // 시트 오픈 후 해당 섹션으로 부드럽게 스크롤
   useEffect(() => {
     if (!sheetOpen || !openSection) return;
     const target =
@@ -478,13 +436,7 @@ export default function DashStudent() {
     return () => clearTimeout(t);
   }, [sheetOpen, openSection]);
 
-  // 칩 라벨 포맷
-  const areaChip = area;
-  const priceChip = price;
-  const categoryChip = category;
-  const sortChip = sort;
-
-  // ── 리스트용 더미 데이터 (state로 상세에 넘길 값 포함)
+  // 리스트 더미 데이터
   const items = [
     {
       id: 1,
@@ -578,29 +530,31 @@ export default function DashStudent() {
           </div>
         </div>
 
-        {/* 필터 바 */}
+        {/* ===== 필터 바 (오너와 동일 스타일) ===== */}
         <div style={filterBarStyle}>
           <div style={filterRowStyle}>
             <div style={chipStyle} onClick={() => openSheet("area")}>
-              <span style={chipLabelStyle}>{areaChip}</span>
-              <img src={DownBarSrc} alt="동네" width={9} height={9} />
+              <span style={chipLabelStyle}>{area}</span>
+              <img src={DownBarSrc} alt="동네" width={6} height={9} />
             </div>
             <div style={chipStyle} onClick={() => openSheet("price")}>
-              <span style={chipLabelStyle}>{priceChip}</span>
-              <img src={DownBarSrc} alt="가격" width={9} height={9} />
+              <span style={chipLabelStyle}>{price}</span>
+              <img src={DownBarSrc} alt="가격" width={6} height={9} />
             </div>
             <div style={chipStyle} onClick={() => openSheet("category")}>
-              <span style={chipLabelStyle}>{categoryChip}</span>
-              <img src={DownBarSrc} alt="카테고리" width={9} height={9} />
+              <span style={chipLabelStyle}>{category}</span>
+              <img src={DownBarSrc} alt="카테고리" width={6} height={9} />
             </div>
             <div style={chipStyle} onClick={() => openSheet("sort")}>
-              <span style={chipLabelStyle}>{sortChip}</span>
-              <img src={DownBarSrc} alt="정렬" width={9} height={9} />
+              <span style={chipLabelStyle}>{sort}</span>
+              <img src={DownBarSrc} alt="정렬" width={6} height={9} />
             </div>
           </div>
+          {/* 우측은 글쓰기 버튼 자리에 빈 공간 유지 (레이아웃 맞춤) */}
+          <div />
         </div>
 
-        {/* 리스트 */}
+        {/* 리스트 (학생 기존 레이아웃 유지) */}
         <div style={listContainerStyle}>
           {items.map((it) => (
             <ShopCard
