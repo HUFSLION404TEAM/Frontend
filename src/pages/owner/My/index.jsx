@@ -138,58 +138,58 @@ const tinyBtn = {
   cursor: "pointer",
 };
 
-/* 파란 드롭다운 트리거 */
-const blueTrigger = {
-  width: 320,
-  height: 30,
-  borderRadius: 10,
-  background: "#1A96FE",
-  color: "#FFF",
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 8,
-  fontFamily: "Pretendard, system-ui, -apple-system",
-  fontWeight: 600,
-  fontSize: 12,
-  letterSpacing: "-0.3px",
-  boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
-  border: "none",
-  outline: "none",
-  cursor: "pointer",
-};
-const floatOverlay = {
-  position: "absolute",
-  inset: 0,
-  zIndex: 10,
-  background: "transparent",
-};
-const dropdownPanelFloat = {
-  position: "absolute",
-  zIndex: 11,
-  width: 320,
-  borderRadius: "0 0 10px 10px",
-  background: "rgba(243,244,246,0.6)",
-  boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
-  backdropFilter: "blur(1px)",
-  overflow: "hidden",
-  display: "flex",
-  flexDirection: "column",
-};
-const dropdownOption = {
-  height: 36,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "rgba(243,244,246,0.6)",
-  borderBottom: "1px solid #EAEAEA",
-  fontFamily: "Pretendard, system-ui, -apple-system",
-  fontSize: 12,
-  color: "#111",
-  letterSpacing: "-0.3px",
-  backdropFilter: "blur(1px)",
-};
-const dropdownOptionActive = { background: "rgba(26,150,254,0.15)" };
+// /* 파란 드롭다운 트리거 */
+// const blueTrigger = {
+//   width: 320,
+//   height: 30,
+//   borderRadius: 10,
+//   background: "#1A96FE",
+//   color: "#FFF",
+//   display: "inline-flex",
+//   alignItems: "center",
+//   justifyContent: "center",
+//   gap: 8,
+//   fontFamily: "Pretendard, system-ui, -apple-system",
+//   fontWeight: 600,
+//   fontSize: 12,
+//   letterSpacing: "-0.3px",
+//   boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+//   border: "none",
+//   outline: "none",
+//   cursor: "pointer",
+// };
+// const floatOverlay = {
+//   position: "absolute",
+//   inset: 0,
+//   zIndex: 10,
+//   background: "transparent",
+// };
+// const dropdownPanelFloat = {
+//   position: "absolute",
+//   zIndex: 11,
+//   width: 320,
+//   borderRadius: "0 0 10px 10px",
+//   background: "rgba(243,244,246,0.6)",
+//   boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
+//   backdropFilter: "blur(1px)",
+//   overflow: "hidden",
+//   display: "flex",
+//   flexDirection: "column",
+// };
+// const dropdownOption = {
+//   height: 36,
+//   display: "flex",
+//   alignItems: "center",
+//   justifyContent: "center",
+//   background: "rgba(243,244,246,0.6)",
+//   borderBottom: "1px solid #EAEAEA",
+//   fontFamily: "Pretendard, system-ui, -apple-system",
+//   fontSize: 12,
+//   color: "#111",
+//   letterSpacing: "-0.3px",
+//   backdropFilter: "blur(1px)",
+// };
+// const dropdownOptionActive = { background: "rgba(26,150,254,0.15)" };
 
 /* 리스트 카드 */
 const companyCard = {
@@ -544,29 +544,29 @@ function CompanyWriteOverlay({ onClose, onDone }) {
 /* ===== 메인 페이지 ===== */
 export default function MyOwner() {
   const [view, setView] = useState("main"); // 'main' | 'edit'
-  // 드롭다운
-  const [ddOpen, setDdOpen] = useState(false);
-  const [selected, setSelected] = useState("업체 선택하기");
-  const frameRef = useRef(null);
-  const triggerRef = useRef(null);
-  const [ddTop, setDdTop] = useState(0);
+  // // 드롭다운
+  // const [ddOpen, setDdOpen] = useState(false);
+  // const [selected, setSelected] = useState("업체 선택하기");
+  // const frameRef = useRef(null);
+  // const triggerRef = useRef(null);
+  // const [ddTop, setDdTop] = useState(0);
 
-  const placeDropdown = () => {
-    if (!frameRef.current || !triggerRef.current) return;
-    const fr = frameRef.current.getBoundingClientRect();
-    const tr = triggerRef.current.getBoundingClientRect();
-    setDdTop(tr.bottom - fr.top + 8);
-  };
-  useEffect(() => {
-    if (!ddOpen) return;
-    placeDropdown();
-    window.addEventListener("resize", placeDropdown);
-    window.addEventListener("scroll", placeDropdown, true);
-    return () => {
-      window.removeEventListener("resize", placeDropdown);
-      window.removeEventListener("scroll", placeDropdown, true);
-    };
-  }, [ddOpen]);
+  // const placeDropdown = () => {
+  //   if (!frameRef.current || !triggerRef.current) return;
+  //   const fr = frameRef.current.getBoundingClientRect();
+  //   const tr = triggerRef.current.getBoundingClientRect();
+  //   setDdTop(tr.bottom - fr.top + 8);
+  // };
+  // useEffect(() => {
+  //   if (!ddOpen) return;
+  //   placeDropdown();
+  //   window.addEventListener("resize", placeDropdown);
+  //   window.addEventListener("scroll", placeDropdown, true);
+  //   return () => {
+  //     window.removeEventListener("resize", placeDropdown);
+  //     window.removeEventListener("scroll", placeDropdown, true);
+  //   };
+  // }, [ddOpen]);
 
   // 리스트(예시)
   const companies = [
@@ -580,7 +580,7 @@ export default function MyOwner() {
 
   return (
     <div style={containerStyle}>
-      <div style={frameStyle} ref={frameRef}>
+      <div style={frameStyle}>
         <div style={statusBarStyle} />
 
         {/* 헤더 */}
@@ -722,7 +722,7 @@ export default function MyOwner() {
               </button>
             </div>
 
-            {/* 드롭다운 트리거 */}
+            {/* 드롭다운 트리거
             <button
               ref={triggerRef}
               type="button"
@@ -740,7 +740,7 @@ export default function MyOwner() {
                 }}
               />
               {selected}
-            </button>
+            </button> */}
 
             {/* 업체 리스트 */}
             <div
@@ -788,7 +788,7 @@ export default function MyOwner() {
           </div>
         )}
 
-        {/* 드롭다운 패널 */}
+        {/* 드롭다운 패널
         {ddOpen && (
           <>
             <div style={floatOverlay} onClick={() => setDdOpen(false)} />
@@ -825,7 +825,7 @@ export default function MyOwner() {
             </div>
           </>
         )}
-
+ */}
         {/* ===== 프로필 편집 ===== */}
         {view === "edit" && (
           <>

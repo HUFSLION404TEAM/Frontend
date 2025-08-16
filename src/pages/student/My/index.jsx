@@ -3,6 +3,7 @@ import StarIconSrc from "../../../assets/Star.svg";
 import BackIconSrc from "../../../assets/Back.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import DoneIconScr from "../../../assets/Done.svg";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_H = 44; // 상태바
 const HEADER_H = 45; // 헤더
@@ -382,7 +383,7 @@ const modalBox = {
 const MyStudent = () => {
   /* ===== 공통 상태 ===== */
   const [view, setView] = useState("main"); // 'main' | 'edit'
-
+  const navigate = useNavigate();
   /* ===== 메인: 포트폴리오 선택 드롭다운 ===== */
   const [ddOpen, setDdOpen] = useState(false);
   const [selected, setSelected] = useState("포트폴리오 A");
@@ -690,6 +691,9 @@ const MyStudent = () => {
                       onClick={() => {
                         setSelected(opt);
                         setDdOpen(false);
+                        navigate("/student/detail", {
+                          state: { portfolio: opt },
+                        });
                       }}
                     >
                       {opt}
