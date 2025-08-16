@@ -131,7 +131,7 @@ export default function NoticeStudent() {
       phone:'010-7777-0000', 
       address:'서울 마포구 어딘가 123', 
       category:'음식점', 
-      temp:27 }
+      temp: '15°C' }
     },
   ];
 
