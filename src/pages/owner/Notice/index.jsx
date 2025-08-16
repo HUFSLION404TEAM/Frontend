@@ -121,7 +121,7 @@ export default function NoticeOwner() {
       birth:'2004.08.04(22)', 
       school:'한국외국어대학교(재학)', 
       major:'경영학과', 
-      temp:15 } 
+      temp: '15°C' } 
     },
   ];
 
