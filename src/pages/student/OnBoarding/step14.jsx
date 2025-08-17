@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
+import {ReactComponent as Dot} from "../../../assets/OnboardDot.svg";
+import {ReactComponent as Stick} from "../../../assets/OnboardStick.svg";
 
 //공통
 const containerStyle = {
@@ -65,7 +67,7 @@ const mainContentStyle = {
     marginBottom: 0,
 };
 
-//메인
+//프로필
 const profileContainerStyle = {
   width: '330px',
   display: 'flex',
@@ -73,8 +75,7 @@ const profileContainerStyle = {
   alignItems: 'flex-start',
   flexDirection: 'column',
   gap: '23px',
-  marginTop: '60px',
-  marginBottom: '50px',
+  marginTop: '65px',
 };
 
 const userTitleStyle = {
@@ -99,56 +100,109 @@ const userNameStyle = {
   letterSpacing: "-0.5px",
 };
 
-const infoTableStyle = {
+//수상정보
+const detailSectionStyle = {
+  width: 324,
+  heigth: 426,
+  display: 'flex',
+  flexDirection: 'column',
+  alighItems: 'flex-start',
+  marginTop: 0,
+  marginBottom: 0,
+};
+
+const detailTitleStyle = {
+  color: "#000",
+  fontFamily: "Pretendard",
+  fontSize: "32px",
+  fontStyle: "normal",
+  fontWeight: 700,
+  lineHeight: "140%",
+  letterSpacing: "-0.8px",
+  marginTop: '40px',
+  marginBottom: '10px',
+};
+
+const detailListContainerStyle = {
   display: 'flex',
   width: "324px",
-  height: "272px",
+  height: "371px",
   flexShrink: 0,
   borderRadius: "16px",
   border: "1px solid #E3E3E3",
   background: "linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.60) 100%)",
   boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
-  justifyContent: 'center',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '6px 3px',
   marginTop: 0,
   marginBottom: 0,
-  gap: '5px',
+  padding: '30px 30px 5px 30px',
+  boxSizing: 'border-box',
 };
 
-const infoRowStyle = {
+const detailListStyle = { 
+  listStyle: 'none', 
+  margin: 0, 
+  padding: 0, 
+  position: 'relative',
+};
+
+const detailItemStyle = {
   display: 'flex',
-  alignItems: 'center',
-  width: '278px',
-  height: '60px',
+  alignItems: 'flex-start',
+  width: '264px',
+  height: '59px',
+  gap: "12px",
+  alignSelf: "stretch",
   marginTop: 0,
-  marginBottom: 0,
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  flexDirection: 'row',
+  marginBottom: '25px',
+  //flexDirection: 'row',
 };
 
-const infoLabelStyle = {
-  color: "#000",
-  textAlign: "center",
+const itemTextStyle = {
+  width: 220,
+  height: 35,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+};
+
+const itemNameStyle = {
+  color: "#505050",
   fontFamily: "Pretendard",
-  fontSize: "20px",
+  fontSize: "14px",
+  fontStyle: "normal",
+  fontWeight: 600,
+  lineHeight: "140%",
+  letterSpacing: "-0.35px",
+};
+
+const itemTypeStyle = {
+  color: "#767676",
+  fontFamily: "Pretendard",
+  fontSize: "11px",
   fontStyle: "normal",
   fontWeight: 500,
-  lineHeight: "20px", // 100%
-  letterSpacing: "-0.5px",
-  whiteSpace: 'pre-line',
+  lineHeight: "140%",
+  letterSpacing: "-0.275px",
+};
+
+const itemIconStyle = {
+  width: 32,
+  height: 59,
+  display: "flex",
+  width: "32px",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "11px",
 }
 
-const infoValueStyle = {
-  color: "#343539",
-  fontFamily: "Pretendard",
-  fontSize: "16px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "normal",
-  whiteSpace: 'pre-line',
+const itemDotStyle = {
+  height: 32,
+};
+
+const itemStickStyle = {
+  height: 16,
 };
 
 //하단버튼
@@ -162,7 +216,7 @@ const buttonAreaStyle = {
   flexDirection: "row",
   justifyContent: "center",
   alignItems: "center",
-  gap: '7px',
+  gap: "7px",
   marginTop:0,
 };
 
@@ -216,25 +270,30 @@ const nextButtonStyle = {
 
 
 //페이지 구조
-export default function InfoSummaryPage() {
+export default function PortfolioAwardsPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [userData, setUserData] = useState(null);
+  const [awards, setAwards] = useState([]);
 
   useEffect(() => {
     const passedData = location.state || {};
 
     const finalUserData = {
-      intro: '치킨 맛잇는 집',
-      name: passedData.name || 'BHC 용인외대점',
-      type: passedData.type || '식품업',
-      businessid: passedData.businessid || '123-45-67890',
-      address: passedData.address || '경기도 용인시 모현읍 \n 외대로 81',
-      phone: passedData.phoneNumber || '010-1234-5678',
+      title: '유행을 선도하는 기획자',
+      name: passedData.name || '심재서',
     };
+
+    const finalAwards = passedData.awards || [
+        { id: 1, name: '캠퍼스 라이프 앱 리디자인', type: '금상' },
+        { id: 2, name: '로컬 카페 SNS 브랜딩 캠페인', type: '동상' },
+        { id: 3, name: '대학생 커뮤니티 플랫폼 기획', type: '장려상' },
+        { id: 4, name: '소비자 행동 분석 리포트', type: '장려상' },
+    ];
     
     setUserData(finalUserData);
+    setAwards(finalAwards);
 
   }, [location.state]);
 
@@ -250,20 +309,33 @@ return (
                 <button style = {backButtonStyle} onClick={() => navigate(-1)}>
                     <BackIcon/>
                 </button>
-                <h1 style = {headerTitleStyle}>가게 정보 입력</h1>
+                <h1 style = {headerTitleStyle}>포트폴리오</h1>
             </header>
 
             <main style={mainContentStyle}>
               <div style={profileContainerStyle}>
-                <span style={userTitleStyle}>{userData.intro}</span>
+                <span style={userTitleStyle}>{userData.title}</span>
                 <span style={userNameStyle}>{userData.name}</span>
               </div>
 
-              <section style={infoTableStyle}>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>업종</span><span style={infoValueStyle}>{userData.type}</span></div>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>사업자 번호</span><span style={infoValueStyle}>{userData.businessid}</span></div>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>Address</span><span style={infoValueStyle}>{userData.address}</span></div>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>Phone</span><span style={infoValueStyle}>{userData.phone}</span></div>
+              <section style={detailSectionStyle}>
+                <h3 style={detailTitleStyle}>Projects</h3>
+                <div style={detailListContainerStyle}>
+                  <ul style={detailListStyle}>
+                    {awards.map(item => (
+                      <li key={item.id} style={detailItemStyle}>
+                        <div style={itemIconStyle}>
+                          <div style={itemDotStyle}><Dot/></div>
+                          <div style={itemStickStyle}><Stick/></div>
+                        </div>
+                        <div style={itemTextStyle}>
+                          <span style={itemNameStyle}>{item.name}</span>
+                          <span style={itemTypeStyle}>{item.type}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </section>
 
               <section style = {buttonAreaStyle}>
