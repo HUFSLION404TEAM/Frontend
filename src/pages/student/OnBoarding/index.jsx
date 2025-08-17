@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
+import {ReactComponent as Dot} from "../../../assets/OnboardDot.svg";
+import {ReactComponent as Stick} from "../../../assets/OnboardStick.svg";
+
+//공통
 const containerStyle = {
   display: 'flex',
   justifyContent: 'center',
@@ -14,7 +18,7 @@ const containerStyle = {
 
 const frameStyle = {
   width: 390,
-  minHeight: '1400px',
+  height: 844,
   backgroundColor: "#FFFFFF",
   position: "relative",
   overflow: "hidden",
@@ -23,8 +27,6 @@ const frameStyle = {
   alignItems: 'center',
 };
 
-
-//헤더
 const headerStyle = {
   height: 45,
   display: 'flex',
@@ -55,92 +57,29 @@ const headerTitleStyle = {
     letterSpacing: "-0.5px",
 };
 
-
-//메인
 const mainContentStyle = {
     display: 'flex',
     width: '390px',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '34px 30px 121px 30px',
     marginTop: 0,
     marginBottom: 0,
 };
 
-//형식
-const formStyle = {
-  width: '329px',
-  height: "51px",
-  alignSelf: "stretch",
-  backgroundColor: 'black'
-  };
-
-const inputGroupStyle = {
-  display : 'flex',
-  width: '329px',
+//프로필
+const profileContainerStyle = {
+  width: '330px',
+  display: 'flex',
+  flexShrink: 0,
+  alignItems: 'flex-start',
   flexDirection: 'column',
-  gap: '12px',
-  marginTop: 0,
-  marginBottom: 0,
-  backgroundColor: 'orange',
-}
+  gap: '23px',
+  marginTop: '65px',
+};
 
-const labelStyle = {
+const userTitleStyle = {
   color: "#000",
-  fontFamily: "Pretendard",
-  fontSize: "16px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "20px",
-  letterSpacing: "-0.5px",
-  marginTop: '21px',
-  marginBottom: 0,
-  backgroundColor: 'green',
-};
-
-const inputTextStyle = {
-  alignSelf: "stretch",
-  borderRadius: "8px",
-  border: "0.5px solid #1A96FE",
-  padding: '12px',
-  fontSize: '12px',
-  fontFamily: "Pretendard",
-  //resize: 'vertical', // 세로 크기만 조절 가능
-  outline: 'none',
-  transition: 'border-color 0.2s',
-
-  backgorundColor: 'yellow',
-};
-
-
-//다음버튼
-const buttonAreaStyle = {
-  position: 'absolute',
-  bottom: '42px',
-  left: '50%',          // 왼쪽에서 50% 지점으로 이동
-  transform: 'translateX(-50%)', // 자체 너비의 50%만큼 왼쪽으로 이동하여 중앙 정렬
-  display: "flex",
-  width: "220px",
-  flexDirection: "column",
-  justifyContent: "center",
-  alignItems: "center",
-  gap: "8px",
-  backgroundColor: 'blue',
-};
-
-const nextButtonStyle = {
-  display: "flex",
-  width: "220px",
-  padding: "12px 0 13px 0",
-  justifyContent: "center",
-  alignItems: "center",
-  border: 'None',
-  borderRadius: "8px",
-  background: "#1A96FE",
-  boxShadow: "10px 10px 30px 0 rgba(0, 0, 0, 0.12)",
-  
-  color: "#F3F4F6",
   textAlign: "center",
   fontFamily: "Pretendard",
   fontSize: "20px",
@@ -148,80 +87,223 @@ const nextButtonStyle = {
   fontWeight: 600,
   lineHeight: "20px", // 100%
   letterSpacing: "-0.5px",
+};
+
+const userNameStyle = {
+  color: "#000",
+  textAlign: "center",
+  fontFamily: "Pretendard",
+  fontSize: "32px",
+  fontStyle: "normal",
+  fontWeight: 700,
+  lineHeight: "30px",
+  letterSpacing: "-0.5px",
+};
+
+//수상정보
+const detailSectionStyle = {
+  width: 324,
+  heigth: 426,
+  display: 'flex',
+  flexDirection: 'column',
+  alighItems: 'flex-start',
+  marginTop: 0,
+  marginBottom: 0,
+};
+
+const detailTitleStyle = {
+  color: "#000",
+  fontFamily: "Pretendard",
+  fontSize: "32px",
+  fontStyle: "normal",
+  fontWeight: 700,
+  lineHeight: "140%",
+  letterSpacing: "-0.8px",
+  marginTop: '40px',
+  marginBottom: '10px',
+};
+
+const detailListContainerStyle = {
+  display: 'flex',
+  width: "324px",
+  height: "371px",
+  flexShrink: 0,
+  borderRadius: "16px",
+  border: "1px solid #E3E3E3",
+  background: "linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.60) 100%)",
+  boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
+  flexDirection: 'column',
+  alignItems: 'center',
+  marginTop: 0,
+  marginBottom: 0,
+  padding: '30px 30px 5px 30px',
+  boxSizing: 'border-box',
+};
+
+const detailListStyle = { 
+  listStyle: 'none', 
+  margin: 0, 
+  padding: 0, 
+  position: 'relative',
+};
+
+const detailItemStyle = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  width: '264px',
+  height: '59px',
+  gap: "12px",
+  alignSelf: "stretch",
+  marginTop: 0,
+  marginBottom: '25px',
+  //flexDirection: 'row',
+};
+
+const itemTextStyle = {
+  width: 220,
+  height: 35,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+};
+
+const itemNameStyle = {
+  color: "#505050",
+  fontFamily: "Pretendard",
+  fontSize: "14px",
+  fontStyle: "normal",
+  fontWeight: 600,
+  lineHeight: "140%",
+  letterSpacing: "-0.35px",
+};
+
+const itemTypeStyle = {
+  color: "#767676",
+  fontFamily: "Pretendard",
+  fontSize: "11px",
+  fontStyle: "normal",
+  fontWeight: 500,
+  lineHeight: "140%",
+  letterSpacing: "-0.275px",
+};
+
+const itemIconStyle = {
+  width: 32,
+  height: 59,
+  display: "flex",
+  width: "32px",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: "11px",
+}
+
+const itemDotStyle = {
+  height: 32,
+};
+
+const itemStickStyle = {
+  height: 16,
+};
+
+//하단버튼
+const buttonAreaStyle = {
+  position: 'absolute',
+  bottom: '46px',
+  left: '50%',          // 왼쪽에서 50% 지점으로 이동
+  transform: 'translateX(-50%)', // 자체 너비의 50%만큼 왼쪽으로 이동하여 중앙 정렬
+  display: "flex",
+  width: "390px",
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: "7px",
+  marginTop:0,
+};
+
+const editButtonStyle = {
+  display: "flex",
+  width: "172px",
+  padding: "13px 20px",
+  justifyContent: "center",
+  alignItems: "center",
+  gap: "10px",
+  flexShrink: 0,
+  borderRadius: "8px",
+  border: "1px solid #0080FF",
+  backgroundColor: 'white',
+  
+  color: "#0080FF",
+  textAlign: "center",
+  fontFamily: "Pretendard",
+  fontSize: "20px",
+  fontStyle: "normal",
+  fontWeight: 600,
+  lineHeight: "20px",
+  letterSpacing: "-0.5px",
 
   marginTop: 0,
   marginBottom: 0,
 };
 
-const nextSubButtonStyle = {
+const nextButtonStyle = {
   display: "flex",
-  width: "220px",
-  height: "20px",
+  width: "172px",
+  height: "46px",
+  padding: "13px 20px",
   justifyContent: "center",
   alignItems: "center",
-  border: 'None',
-  backgroundColor: "transparent",
+  gap: "10px",
+  flexShrink: 0,
+  borderRadius: "8px",
+  background: "#0080FF",
+  border: 'none',
 
-  color: "#343529",
+  color: "#FFF",
   textAlign: "center",
   fontFamily: "Pretendard",
-  fontSize: "12px",
+  fontSize: "20px",
   fontStyle: "normal",
   fontWeight: 600,
-  lineHeight: "20px", // 166.667%
-  letterSpacing: "-0.5px"
+  lineHeight: "140%", // 28px
+  letterSpacing: "-0.5px",
 };
 
 
-const formFields = [
-  { id: 'projectIntro', label: '1. 프로젝트 소개', width: '329px', height: '51px' },
-  { id: 'projectSummary', label: '2. 프로젝트 개요', width: '329px', height: '51px' },
-  { id: 'tasksDone', label: '3. 진행한 일', width: '329px', height: '51px' },
-  { id: 'process', label: '4. 과정', width: '329px', height: '51px' },
-  { id: 'results', label: '5. 결과물', width: '329px', height: '51px' },
-  { id: 'growthPoints', label: '6. 성장한 점', width: '329px', height: '51px' },
-  { id: 'mySkills', label: '7. 나의 역량', width: '329px', height: '51px' },
-  { id: 'awards', label: '수상경력', width: '329px', height: '145px' },
-];
-
-
 //페이지 구조
-export default function CreatePortfolioDetailsPage() {
+export default function PortfolioAwardsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [formData, setFormData] = useState({
-    projectIntro: '',
-    projectSummary: '',
-    tasksDone: '',
-    process: '',
-    results: '',
-    growthPoints: '',
-    mySkills: '',
-    awards: '',
-  });
+  const [userData, setUserData] = useState(null);
+  const [awards, setAwards] = useState([]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-  const handleNext = () => {
-      console.log('입력된 포트폴리오 데이터:', formData);
-      navigate('../src/pages/student/OnBoarding/step11.jsx'); 
-    }
+  useEffect(() => {
+    const passedData = location.state || {};
+
+    const finalUserData = {
+      title: '유행을 선도하는 기획자',
+      name: passedData.name || '심재서',
+    };
+
+    const finalAwards = passedData.awards || [
+        { id: 1, name: '캠퍼스 라이프 앱 리디자인', type: '금상' },
+        { id: 2, name: '로컬 카페 SNS 브랜딩 캠페인', type: '동상' },
+        { id: 3, name: '대학생 커뮤니티 플랫폼 기획', type: '장려상' },
+        { id: 4, name: '소비자 행동 분석 리포트', type: '장려상' },
+    ];
+    
+    setUserData(finalUserData);
+    setAwards(finalAwards);
+
+  }, [location.state]);
+
+  if (!userData) {
+    return null;
+  }
+
 
 return (
     <div style = {containerStyle}>
-        <style>
-          {`
-            .portfolio-textarea:focus {
-            border-color: #5A87FF;
-            }
-          `}
-        </style>
-
         <div style = {frameStyle}>
             <header style = {headerStyle}>
                 <button style = {backButtonStyle} onClick={() => navigate(-1)}>
@@ -231,25 +313,36 @@ return (
             </header>
 
             <main style={mainContentStyle}>
-              <div style={formStyle}>
-                {/* formFields 배열을 순회하며 입력 필드를 동적으로 생성 */}
-                {formFields.map(field => (
-                <div key={field.id} style={inputGroupStyle}>
-                  <label htmlFor={field.id} style={labelStyle}>{field.label}</label>
-                  <textarea
-                    id={field.id}
-                    name={field.id}
-                    className="portfolio-textarea"
-                    value={formData[field.id]}
-                    onChange={handleChange}
-                    style={{...inputTextStyle, height: field.height}}
-                  />
-                </div>
-                ))}
+              <div style={profileContainerStyle}>
+                <span style={userTitleStyle}>{userData.title}</span>
+                <span style={userNameStyle}>{userData.name}</span>
               </div>
+
+              <section style={detailSectionStyle}>
+                <h3 style={detailTitleStyle}>Projects</h3>
+                <div style={detailListContainerStyle}>
+                  <ul style={detailListStyle}>
+                    {/* 리스트 아이템 사이에 세로줄을 그리기 위한 요소 */}
+                    {/*awards.length > 1 && <div style={itemLineStyle}><Stick/></div>*/}
+                    {awards.map(item => (
+                      <li key={item.id} style={detailItemStyle}>
+                        <div style={itemIconStyle}>
+                          <div style={itemDotStyle}><Dot/></div>
+                          <div style={itemStickStyle}><Stick/></div>
+                        </div>
+                        <div style={itemTextStyle}>
+                          <span style={itemNameStyle}>{item.name}</span>
+                          <span style={itemTypeStyle}>{item.type}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+
               <section style = {buttonAreaStyle}>
+                <button style = {editButtonStyle}>수정</button>
                 <button style = {nextButtonStyle}>다음</button>
-                <button style = {nextSubButtonStyle}>다음에 입력하기</button>
               </section>
             </main>
         </div>

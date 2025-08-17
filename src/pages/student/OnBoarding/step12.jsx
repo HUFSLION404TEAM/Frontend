@@ -73,8 +73,8 @@ const profileContainerStyle = {
   alignItems: 'flex-start',
   flexDirection: 'column',
   gap: '23px',
-  marginTop: '60px',
-  marginBottom: '50px',
+  marginTop: '65px',
+  marginBottom: '46px'
 };
 
 const userTitleStyle = {
@@ -102,7 +102,7 @@ const userNameStyle = {
 const infoTableStyle = {
   display: 'flex',
   width: "324px",
-  height: "272px",
+  height: "313px",
   flexShrink: 0,
   borderRadius: "16px",
   border: "1px solid #E3E3E3",
@@ -114,7 +114,6 @@ const infoTableStyle = {
   padding: '6px 3px',
   marginTop: 0,
   marginBottom: 0,
-  gap: '5px',
 };
 
 const infoRowStyle = {
@@ -138,7 +137,6 @@ const infoLabelStyle = {
   fontWeight: 500,
   lineHeight: "20px", // 100%
   letterSpacing: "-0.5px",
-  whiteSpace: 'pre-line',
 }
 
 const infoValueStyle = {
@@ -148,7 +146,6 @@ const infoValueStyle = {
   fontStyle: "normal",
   fontWeight: 400,
   lineHeight: "normal",
-  whiteSpace: 'pre-line',
 };
 
 //하단버튼
@@ -162,7 +159,7 @@ const buttonAreaStyle = {
   flexDirection: "row",
   justifyContent: "center",
   alignItems: "center",
-  gap: '7px',
+  gap: "7px",
   marginTop:0,
 };
 
@@ -216,7 +213,7 @@ const nextButtonStyle = {
 
 
 //페이지 구조
-export default function InfoSummaryPage() {
+export default function PortfolioSummaryPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -226,12 +223,13 @@ export default function InfoSummaryPage() {
     const passedData = location.state || {};
 
     const finalUserData = {
-      intro: '치킨 맛잇는 집',
-      name: passedData.name || 'BHC 용인외대점',
-      type: passedData.type || '식품업',
-      businessid: passedData.businessid || '123-45-67890',
-      address: passedData.address || '경기도 용인시 모현읍 \n 외대로 81',
+      title: '유행을 선도하는 기획자',
+      name: passedData.name || '심재서',
+      birth: passedData.birthdate || '2006.08.07',
+      education: passedData.university || '한국외국어대학교 글로벌',
       phone: passedData.phoneNumber || '010-1234-5678',
+      email: passedData.uniEmail || 'jaeseo0944@hufs.ac.kr',
+      career: '2 years',
     };
     
     setUserData(finalUserData);
@@ -250,20 +248,21 @@ return (
                 <button style = {backButtonStyle} onClick={() => navigate(-1)}>
                     <BackIcon/>
                 </button>
-                <h1 style = {headerTitleStyle}>가게 정보 입력</h1>
+                <h1 style = {headerTitleStyle}>포트폴리오</h1>
             </header>
 
             <main style={mainContentStyle}>
               <div style={profileContainerStyle}>
-                <span style={userTitleStyle}>{userData.intro}</span>
+                <span style={userTitleStyle}>{userData.title}</span>
                 <span style={userNameStyle}>{userData.name}</span>
               </div>
 
               <section style={infoTableStyle}>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>업종</span><span style={infoValueStyle}>{userData.type}</span></div>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>사업자 번호</span><span style={infoValueStyle}>{userData.businessid}</span></div>
-                <div style={infoRowStyle}><span style={infoLabelStyle}>Address</span><span style={infoValueStyle}>{userData.address}</span></div>
+                <div style={infoRowStyle}><span style={infoLabelStyle}>Birth</span><span style={infoValueStyle}>{userData.birth}</span></div>
+                <div style={infoRowStyle}><span style={infoLabelStyle}>Education</span><span style={infoValueStyle}>{userData.education}</span></div>
                 <div style={infoRowStyle}><span style={infoLabelStyle}>Phone</span><span style={infoValueStyle}>{userData.phone}</span></div>
+                <div style={infoRowStyle}><span style={infoLabelStyle}>E-mail</span><span style={infoValueStyle}>{userData.email}</span></div>
+                <div style={infoRowStyle}><span style={infoLabelStyle}>Career</span><span style={infoValueStyle}>{userData.career}</span></div>
               </section>
 
               <section style = {buttonAreaStyle}>
