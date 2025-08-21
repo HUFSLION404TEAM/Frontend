@@ -35,6 +35,7 @@ import ChatRoomStudent from "./pages/student/ChatRoom";
 
 // [ADD] 푸터 포함 레이아웃
 import Layout from "./layouts/Layout";
+import AuthComplete from "./pages/common/Login/authcomplete";
 
 function App() {
   return (
@@ -43,8 +44,9 @@ function App() {
         {/* 공통 */}
         <Route path="/" element={<Start />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/auth/complete" element={<AuthComplete />} />{" "}
+        {/* OAuth 완료 */}
         <Route path="/select" element={<Select />} />
-
         {/* [ADD] Owner 레이아웃 라우트 (푸터 자동 포함) */}
         <Route path="/owner" element={<Layout role="owner" />}>
           <Route index element={<DashOwner />} /> {/* /owner → 대시 */}
@@ -63,7 +65,6 @@ function App() {
           <Route path="detail" element={<DetailOwner />} />
           <Route path="write" element={<WriteOwner />} />
         </Route>
-
         {/* [ADD] Student 레이아웃 라우트 (푸터 자동 포함) */}
         <Route path="/student" element={<Layout role="student" />}>
           <Route index element={<DashStudent />} /> {/* /student → 대시 */}
@@ -82,7 +83,6 @@ function App() {
           <Route path="apply" element={<Apply />} />
           <Route path="detail" element={<DetailStudent />} />
         </Route>
-
         {/* Owner (소상공인) */}
         <Route path="/owner/onboarding" element={<OnboardingOwner />} />
         <Route path="/owner/dash" element={<DashOwner />} />
@@ -98,7 +98,6 @@ function App() {
         <Route path="/owner/request" element={<Request />} />
         <Route path="/owner/detail" element={<DetailOwner />} />
         <Route path="/owner/write" element={<WriteOwner />} />
-
         {/* Student (대학생) */}
         <Route path="/student/onboarding" element={<OnboardingStudent />} />
         <Route path="/student/dash" element={<DashStudent />} />
