@@ -6,6 +6,7 @@ import AlarmIconSrc from "../../../assets/Alarm.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import CalendarScr from "../../../assets/Calendar.svg";
+import { useHeart } from "../../../contexts/heartcontext";
 
 const FAVORITES_PATH = "/student/heart";
 const NOTIFICATIONS_PATH = "/student/notice";
@@ -16,6 +17,11 @@ const HEADER_H = 45;
 const INFO_H = 96;
 const FILTER_H = 44;
 const SIDE_GAP = 10;
+
+// [API] 백엔드 베이스 URL (없으면 기본 도메인 사용)
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr"; // [API]
+const PLANNERS_LIST_PATH = "/dashboard/planners"; // [API] 기획자(대학생) 전체 조회
 
 /* ===== 기본 레이아웃 ===== */
 const containerStyle = {
@@ -330,16 +336,18 @@ const checkIcon = (active) => ({
 
 /* ===== 카드 컴포넌트 ===== */
 function ShopCard({
-  title = "디지털 메뉴 SNS 홍보 구인",
-  status = "모집중",
-  period = "2024.02.14 - 2024.03.20",
-  store = "컴포즈커피 용인 외대점",
-  category = "카페",
-  distance = "n km 떨어짐",
-  initialLiked = false,
+  id,
+  title,
+  status,
+  period,
+  store,
+  category,
+  distance,
   onOpen,
+  type = "business",
 }) {
-  const [liked, setLiked] = useState(initialLiked);
+  const { isHeart, toggle } = useHeart();
+  const liked = isHeart(type, id);
 
   return (
     <div
@@ -359,7 +367,6 @@ function ShopCard({
           <span>{distance}</span>
         </div>
       </div>
-
       <div style={infoCol}>
         <div style={statusTextStyle}>{status}</div>
         <div style={titleText}>{title}</div>
@@ -371,16 +378,17 @@ function ShopCard({
           {store} | {category}
         </div>
       </div>
-
       <img
         src={liked ? HeartIconSrc : EmptyHeartSrc}
-        alt="좋아요"
+        alt={liked ? "찜 해제" : "찜하기"}
         style={likeBtnStyle}
-        onClick={(e) => {
+        onClick={async (e) => {
           e.stopPropagation();
-          setLiked((v) => !v);
+          try {
+            await toggle(type, id);
+          } catch {}
         }}
-      />
+      />{" "}
     </div>
   );
 }
@@ -406,6 +414,11 @@ export default function DashStudent() {
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
   const scrollRef = useRef(null);
+
+  // [API] 리스트 상태 (기존 더미 배열 대체)
+  const [items, setItems] = useState([]); // [API]
+  const [loading, setLoading] = useState(false); // [API]
+  const [error, setError] = useState(null); // [API]
 
   const openSheet = (section) => {
     setOpenSection(section);
@@ -436,59 +449,106 @@ export default function DashStudent() {
     return () => clearTimeout(t);
   }, [sheetOpen, openSection]);
 
-  // 리스트 더미 데이터
-  const items = [
-    {
-      id: 1,
-      title: "디지털 메뉴 SNS 홍보 구인",
-      status: "모집중",
-      period: "2024.02.14 - 2024.03.20",
-      store: "컴포즈커피 용인 외대점",
-      category: "카페",
-      distance: "0.8km",
-      liked: true,
-    },
-    {
-      id: 2,
-      title: "포스터/간판 디자인 보조",
-      status: "모집중",
-      period: "2024.03.01 - 2024.03.31",
-      store: "삼촌분식 우만점",
-      category: "식당",
-      distance: "1.2km",
+  // [API] 필터 → 쿼리스트링 매핑 (백엔드 파라미터명에 맞춰 필요시 수정)
+  function buildFilterQuery() {
+    // 기본값은 필터 미적용
+    const params = new URLSearchParams();
+
+    // 지역 예시 매핑
+    if (area && area !== "우만동 외" && area !== "수원 전체") {
+      params.set("region", area); // 예: ?region=인계동
+    }
+
+    // 가격 레이블 → 구간 예시
+    const priceMap = {
+      "₩0~₩10,000": "0-10000",
+      "₩10,000~₩30,000": "10000-30000",
+      "₩30,000~₩50,000": "30000-50000",
+      "₩50,000+": "50000-",
+    };
+    if (priceMap[price]) params.set("priceRange", priceMap[price]);
+
+    // 카테고리
+    if (category && category !== "카테고리") params.set("category", category);
+
+    // 정렬
+    const sortMap = {
+      "정확도 순": "relevance",
+      "최신 순": "latest",
+      "낮은 가격 순": "priceAsc",
+      "높은 가격 순": "priceDesc",
+    };
+    if (sortMap[sort]) params.set("sort", sortMap[sort]);
+
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
+  // [API] 서버 응답 → 카드 데이터로 변환 (필드명이 다를 수 있어 안전하게 매핑)
+  function mapPlannerToItem(p) {
+    const period =
+      formatPeriod(p?.availableFrom, p?.availableTo) || p?.period || "-";
+    return {
+      id: p?.id ?? p?.plannerId ?? p?.userId ?? crypto.randomUUID(),
+      title: p?.title ?? p?.name ?? p?.nickname ?? "무제",
+      status: p?.status ?? "모집중",
+      period,
+      store: p?.school ?? p?.major ?? p?.department ?? "기획자",
+      category: p?.category ?? p?.skill ?? "기타",
+      distance: p?.distance ? `${p.distance}km` : "",
       liked: false,
-    },
-    {
-      id: 3,
-      title: "인스타 릴스 촬영/편집",
-      status: "모집중",
-      period: "2024.02.20 - 2024.03.10",
-      store: "빵굽는하루",
-      category: "베이커리",
-      distance: "2.3km",
-      liked: false,
-    },
-    {
-      id: 4,
-      title: "매장 사진 촬영(1회)",
-      status: "모집중",
-      period: "2024.02.18 - 2024.03.05",
-      store: "그린티라떼",
-      category: "카페",
-      distance: "0.5km",
-      liked: true,
-    },
-    {
-      id: 5,
-      title: "블로그 리뷰 콘텐츠 작성",
-      status: "모집중",
-      period: "2024.03.05 - 2024.03.25",
-      store: "야식천국",
-      category: "서비스",
-      distance: "3.0km",
-      liked: false,
-    },
-  ];
+    };
+  }
+
+  // [API] 날짜 범위 표시 유틸
+  function formatPeriod(from, to) {
+    if (!from && !to) return "";
+    const f = from ? String(from).slice(0, 10) : "";
+    const t = to ? String(to).slice(0, 10) : "";
+    return f && t ? `${f} - ${t}` : f || t;
+  }
+
+  // [API] 목록 호출
+  async function fetchPlanners() {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const qs = buildFilterQuery();
+      const res = await fetch(`${API_BASE}${PLANNERS_LIST_PATH}${qs}`, {
+        credentials: "include", // 쿠키 세션일 때 필요
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+
+      // 감싸진 응답({success,message,data}) 형태도 대비
+      const payload = json?.data ?? json;
+
+      // 페이지네이션 형태(content) 또는 배열 형태 둘 다 처리
+      const list = Array.isArray(payload?.content)
+        ? payload.content
+        : Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.list)
+        ? payload.list
+        : [];
+
+      setItems(list.map(mapPlannerToItem));
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "에러");
+      setItems([]); // 실패 시 빈 목록
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // [API] 처음 로드 + 필터 바뀔 때 자동 조회
+  useEffect(() => {
+    fetchPlanners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [area, price, category, sort]); // 필터 변경 시 재요청
 
   return (
     <div style={containerStyle}>
@@ -556,16 +616,27 @@ export default function DashStudent() {
 
         {/* 리스트 (학생 기존 레이아웃 유지) */}
         <div style={listContainerStyle}>
+          {/* [API] 로딩/에러 간단 표기 (UI 변경 없이 텍스트만) */}
+          {loading && (
+            <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
+          )}
+          {error && !loading && (
+            <div style={{ fontSize: 12, color: "#D00" }}>
+              목록을 불러오지 못했습니다.
+            </div>
+          )}
+
           {items.map((it) => (
             <ShopCard
               key={it.id}
+              id={it.id}
+              type="business"
               title={it.title}
               status={it.status}
               period={it.period}
               store={it.store}
               category={it.category}
               distance={it.distance}
-              initialLiked={it.liked}
               onOpen={() =>
                 navigate(DETAIL_PATH, {
                   state: {

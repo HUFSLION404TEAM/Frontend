@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BackIconSrc from "../../../assets/Back.svg";
 import HeartIconSrc from "../../../assets/Heart.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
+import { useHeart } from "../../../contexts/heartcontext"; // [API] 추가
 
 // ── 공통 프레임 (학생 페이지와 동일) ──
 const STATUS_H = 59;
@@ -226,6 +227,12 @@ export default function DetailOwner() {
   const { state } = useLocation();
   const [liked, setLiked] = React.useState(false);
 
+  // [API] 전역 하트 훅 + 타입/식별자
+  const { isHeart, toggle } = useHeart();
+  const HEART_TYPE = "planner"; // 오너가 찜하는 대상: 기획자(학생)
+  const targetId =
+    state?.id ?? state?.plannerId ?? state?.studentId ?? state?.userId;
+
   // 전달받은 값이 있으면 사용 (없으면 피그마 샘플)
   const studentName = state?.name ?? "김대학";
   const temperature = state?.temp ?? "36.5°C";
@@ -234,6 +241,23 @@ export default function DetailOwner() {
   const interest = state?.interest ?? "디지털 콘텐츠 제작";
   const recent = state?.recent ?? "최근 기록 3일";
   const projectTitle = state?.title ?? "디저트 메뉴 SNS 홍보";
+
+  // [API] 전역 상태 ↔ 로컬 liked 동기화
+  React.useEffect(() => {
+    if (targetId) setLiked(isHeart(HEART_TYPE, targetId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetId, HEART_TYPE, isHeart]);
+
+  // [API] 토글(낙관적 업데이트 + 롤백)
+  const handleToggle = async () => {
+    if (!targetId) return;
+    setLiked((v) => !v);
+    try {
+      await toggle(HEART_TYPE, targetId);
+    } catch {
+      setLiked((v) => !v);
+    }
+  };
 
   return (
     <div style={containerStyle}>
@@ -277,7 +301,7 @@ export default function DetailOwner() {
                 src={liked ? HeartIconSrc : EmptyHeartSrc}
                 alt="좋아요"
                 style={heartTopBtn}
-                onClick={() => setLiked((v) => !v)}
+                onClick={handleToggle}
               />
             </div>
 
@@ -326,11 +350,7 @@ export default function DetailOwner() {
 
         {/* 하단 버튼 */}
         <div style={bottomBar}>
-          <button
-            type="button"
-            style={btnOutline}
-            onClick={() => setLiked((v) => !v)}
-          >
+          <button type="button" style={btnOutline} onClick={handleToggle}>
             <img
               src={liked ? HeartIconSrc : EmptyHeartSrc}
               alt="하트"
