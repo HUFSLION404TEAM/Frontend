@@ -1,11 +1,15 @@
+// src/pages/student/Heart/index.jsx
 import React from "react";
 import BackIconSrc from "../../../assets/Back.svg";
 import SearchIconSrc from "../../../assets/Search.svg";
 import HomeIconSrc from "../../../assets/Home.svg";
 import HeartIconSrc from "../../../assets/Heart.svg";
-import EmptyHeartSrc from "../../../assets/emptyHeart.svg"; // ← 빈 하트 추가
+import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import { useNavigate } from "react-router-dom";
+// [API]
+import { listHearts } from "../../../api/heart";
+import { useHeart } from "../../../contexts/heartcontext";
 
 const STATUS_H = 59; // StatusBar 높이
 const HEADER_H = 49; // Header 높이
@@ -295,62 +299,81 @@ export default function HeartStudent() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [activeFilter, setActiveFilter] = React.useState("전체");
 
-  // 리스트 데이터 (필요 시 API 대체)
-  const items = [
-    {
-      id: 1,
-      title: "디저트 메뉴 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "36°C · 11 days ago",
-    },
-    {
-      id: 2,
-      title: "여름 신메뉴 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "29°C · 7 days ago",
-    },
-    {
-      id: 3,
-      title: "겨울 신메뉴 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "31°C  · 10 days ago",
-    },
-    {
-      id: 4,
-      title: "크리마스 이벤트 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "31°C · 1 days ago",
-    },
-    {
-      id: 5,
-      title: "크리마스 이벤트 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "31°C · 1 days ago",
-    },
-    {
-      id: 6,
-      title: "크리마스 이벤트 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "31°C · 1 days ago",
-    },
-    {
-      id: 7,
-      title: "크리마스 이벤트 홍보 구인",
-      subtitle: "카페 | 음료점업 · 모집 중",
-      temp: "31°C · 1 days ago",
-    },
-  ];
+  // [API] 이 페이지에서 다룰 찜 타입 (학생이 보통 소상공인을 찜한다고 가정)
+  const HEART_TYPE = "business";
 
-  // 하트 토글 상태: id -> boolean
-  const [likes, setLikes] = React.useState(() =>
-    Object.fromEntries(items.map((it) => [it.id, false]))
-  );
+  // [API] 서버 목록 상태
+  const [items, setItems] = React.useState([]); // [{id,title,subtitle,temp}]
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  const toggleLike = (id) => setLikes((prev) => ({ ...prev, [id]: !prev[id] }));
+  // [API] 전역 하트 훅
+  const { toggle } = useHeart();
+
+  // [API] 서버 응답 → 카드용 데이터로 매핑
+  function mapHeartToCard(x) {
+    const title =
+      x?.title || x?.name || x?.storeName || x?.nickname || "제목 없음";
+    const subLeft =
+      x?.category || x?.type || x?.field || x?.major || "소상공인";
+    const subRight = x?.status || "모집 중";
+    const subtitle = `${subLeft} · ${subRight}`;
+    const temp =
+      typeof x?.temperature === "number"
+        ? `${x.temperature.toFixed(0)}°C`
+        : x?.temp || x?.updatedAt || "36°C";
+
+    return {
+      id: x?.id ?? x?.targetId ?? crypto.randomUUID(),
+      title,
+      subtitle,
+      temp,
+    };
+  }
+
+  // [API] 목록 조회
+  async function fetchHearts() {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await listHearts(HEART_TYPE);
+      const arr = Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res)
+        ? res
+        : Array.isArray(res?.content)
+        ? res.content
+        : [];
+      setItems(arr.map(mapHeartToCard));
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "에러");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // [API] 최초 로드
+  React.useEffect(() => {
+    fetchHearts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // [API] 하트 토글 (이 화면에선 보통 '해제' 동작)
+  async function onToggleHeart(id) {
+    try {
+      await toggle(HEART_TYPE, id);
+      // 성공 시 목록에서 제거(낙관적)
+      setItems((prev) => prev.filter((it) => it.id !== id));
+    } catch (e) {
+      // 실패 시 아무것도 안 함 (Provider가 롤백)
+    }
+  }
 
   const openDetail = (item) =>
     navigate("/student/Detail", {
-      state: { title: item.title, subtitle: item.subtitle },
+      state: { title: item.title, subtitle: item.subtitle, id: item.id },
     });
 
   return (
@@ -438,14 +461,24 @@ export default function HeartStudent() {
 
         {/* List */}
         <div style={listContainerStyle}>
+          {/* 상태 */}
+          {loading && (
+            <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
+          )}
+          {error && !loading && (
+            <div style={{ fontSize: 12, color: "#D00" }}>
+              관심목록을 불러오지 못했습니다.
+            </div>
+          )}
+
           {items.map((item) => (
             <FavoriteCard
               key={item.id}
               title={item.title}
               subtitle={item.subtitle}
               temp={item.temp}
-              liked={!!likes[item.id]}
-              onToggleHeart={() => toggleLike(item.id)}
+              liked={true /* 찜 목록 화면이므로 기본 true */}
+              onToggleHeart={() => onToggleHeart(item.id)} // [API]
               onOpen={() => openDetail(item)}
             />
           ))}

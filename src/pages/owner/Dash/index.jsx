@@ -1,4 +1,4 @@
-// pages/owner/Dash/index.jsx (또는 기존 DashOwner 파일 경로)
+// pages/owner/Dash/index.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HeartIconSrc from "../../../assets/Heart.svg";
@@ -8,6 +8,7 @@ import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import CalendarScr from "../../../assets/Calendar.svg"; // ✅ 캘린더 아이콘 사용
+import { useHeart } from "../../../contexts/heartcontext";
 
 const STATUS_H = 44; // 상태바
 const HEADER_H = 45; // 헤더
@@ -19,6 +20,13 @@ const FAVORITES_PATH = "/owner/heart";
 const NOTIFICATIONS_PATH = "/owner/notice";
 const DETAIL_PATH = "/owner/detail";
 const WRITE_PATH = "/owner/write";
+
+// [API] =========================
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr"; // [API]
+const PLANNERS_LIST_PATH = "/dashboard/planners"; // 기획자(대학생) 전체 조회 [API]
+// 필요 시 소상공인 목록이면 "/dashboard/business" 로만 바꾸면 됨. [API]
+// =================================
 
 // ===== 공통 프레임 =====
 const containerStyle = {
@@ -277,18 +285,19 @@ const likeBtnStyle = {
   cursor: "pointer",
 };
 
-// ===== 카드 컴포넌트 (컨텐츠는 기존: 이름/나이/전공/온도/찜, + 기간옵션) =====
+// ===== 카드 컴포넌트 =====
 function CandidateCard({
-  name = "이름",
-  age = "나이",
-  field = "전공, 자신 있는 분야",
-  temp = "36.5°C",
-  liked = false, // 초기 찜 상태
-  period = "협의 가능", // 학생 스타일에 맞춘 캘린더 라인(옵션)
-  onOpen, // 카드 클릭 시 이동
+  id,
+  name,
+  age,
+  field,
+  temp,
+  period = "협의 가능",
+  onOpen,
+  type = "planner",
 }) {
-  const [isLiked, setIsLiked] = React.useState(liked);
-
+  const { isHeart, toggle } = useHeart();
+  const isLiked = isHeart(type, id);
   return (
     <div
       style={cardStyle}
@@ -302,45 +311,32 @@ function CandidateCard({
         }
       }}
     >
-      {/* 썸네일 */}
       <div style={thumbStyle} />
-
-      {/* 텍스트 영역 */}
       <div style={infoCol}>
         <div style={nameRow}>
           <span style={nameStyle}>{name}</span>
           <span style={ageStyle}>{age}</span>
         </div>
         <div style={fieldStyle}>{field}</div>
-
-        {/* 캘린더 라인 (옵션) */}
         <div style={periodRowStyle}>
           <img src={CalendarScr} alt="기간" width={12} height={12} />
           <span>{period}</span>
         </div>
-
-        {/* 온도 */}
         <div style={tempRowStyle}>
           <img src={TemperatureIconSrc} alt="온도" width={12} height={12} />
           <span>{temp}</span>
         </div>
       </div>
 
-      {/* 하트 토글 */}
       <img
         src={isLiked ? HeartIconSrc : EmptyHeartSrc}
         alt={isLiked ? "찜 해제" : "찜하기"}
         style={likeBtnStyle}
-        onClick={(e) => {
+        onClick={async (e) => {
           e.stopPropagation();
-          setIsLiked((v) => !v);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsLiked((v) => !v);
-          }
+          try {
+            await toggle(type, id);
+          } catch {}
         }}
       />
     </div>
@@ -365,6 +361,11 @@ export default function DashOwner() {
   const priceRef = useRef(null);
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
+
+  // [API] 목록 상태
+  const [items, setItems] = useState([]); // [API]
+  const [loading, setLoading] = useState(false); // [API]
+  const [error, setError] = useState(null); // [API]
 
   const openSheet = (section) => {
     setOpenSection(section);
@@ -395,6 +396,103 @@ export default function DashOwner() {
     );
     return () => clearTimeout(t);
   }, [sheetOpen, openSection]);
+
+  // [API] (필요시) 쿼리 매핑 — 서버가 아직 filter 엔드포인트 없으면 무시됨
+  function buildFilterQuery() {
+    // [API]
+    const params = new URLSearchParams();
+    if (area && area !== "우만동 외" && area !== "수원 전체")
+      params.set("region", area);
+    const priceMap = {
+      "₩0~₩10,000": "0-10000",
+      "₩10,000~₩30,000": "10000-30000",
+      "₩30,000~₩50,000": "30000-50000",
+      "₩50,000+": "50000-",
+    };
+    if (priceMap[price]) params.set("priceRange", priceMap[price]);
+    if (category && category !== "카테고리") params.set("category", category);
+    const sortMap = {
+      "정확도 순": "relevance",
+      "최신 순": "latest",
+      "낮은 가격 순": "priceAsc",
+      "높은 가격 순": "priceDesc",
+    };
+    if (sortMap[sort]) params.set("sort", sortMap[sort]);
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }
+
+  // [API] 서버 응답 → 카드 데이터로 매핑
+  function mapPlannerToCandidate(p) {
+    // [API]
+    const period =
+      formatPeriod(p?.availableFrom, p?.availableTo) ||
+      p?.period ||
+      "협의 가능";
+    const skills = Array.isArray(p?.skills)
+      ? p.skills.join(", ")
+      : p?.skill || p?.major || "전공/분야";
+    return {
+      id: p?.id ?? p?.plannerId ?? p?.userId ?? crypto.randomUUID(),
+      name: p?.name ?? p?.nickname ?? "이름",
+      age: String(p?.age ?? "").trim() || "나이",
+      field: skills,
+      temp:
+        typeof p?.temperature === "number"
+          ? `${p.temperature.toFixed(1)}°C`
+          : "36.5°C",
+      liked: false,
+      period,
+    };
+  }
+
+  function formatPeriod(from, to) {
+    // [API]
+    if (!from && !to) return "";
+    const f = from ? String(from).slice(0, 10) : "";
+    const t = to ? String(to).slice(0, 10) : "";
+    return f && t ? `${f} ~ ${t}` : f || t;
+  }
+
+  // [API] 목록 호출
+  async function fetchPlanners() {
+    // [API]
+    try {
+      setLoading(true);
+      setError(null);
+
+      const qs = buildFilterQuery();
+      const res = await fetch(`${API_BASE}${PLANNERS_LIST_PATH}${qs}`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const payload = json?.data ?? json; // {success,message,data} 래핑 대비
+      const list = Array.isArray(payload?.content)
+        ? payload.content
+        : Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.list)
+        ? payload.list
+        : [];
+
+      setItems(list.map(mapPlannerToCandidate));
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "에러");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // [API] 최초 로드 + 필터 변경 시 재요청
+  useEffect(() => {
+    // [API]
+    fetchPlanners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [area, price, category, sort]);
 
   return (
     <div style={containerStyle}>
@@ -439,7 +537,7 @@ export default function DashOwner() {
           </div>
         </div>
 
-        {/* 필터 바 (기존) */}
+        {/* 필터 바 */}
         <div style={filterBarStyle}>
           <div style={filterRowStyle}>
             <div style={chipStyle} onClick={() => openSheet("area")}>
@@ -472,71 +570,45 @@ export default function DashOwner() {
           </button>
         </div>
 
-        {/* ✅ 리스트(학생 스타일 적용) */}
+        {/* 리스트 */}
         <div style={listContainerStyle}>
-          <CandidateCard
-            name="이름"
-            age="25"
-            field="전공, 자신 있는 분야"
-            temp="36.5°C"
-            liked
-            period="2025.02 ~ 2025.06"
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "이름",
-                    age: "25",
-                    field: "전공, 자신 있는 분야",
-                    temp: "36.5°C",
-                    liked: true,
-                    period: "2025.02 ~ 2025.06",
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            name="김지원"
-            age="23"
-            field="마케팅/콘텐츠 기획"
-            temp="37.1°C"
-            liked={false}
-            period="협의 가능"
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "김지원",
-                    age: "23",
-                    field: "마케팅/콘텐츠 기획",
-                    temp: "37.1°C",
-                    liked: false,
-                    period: "협의 가능",
-                  },
-                });
-            }}
-          />
-          <CandidateCard
-            name="박서준"
-            age="24"
-            field="영상 촬영/편집"
-            temp="36.9°C"
-            liked={false}
-            period="2025.03 ~ 2025.04"
-            onOpen={() => {
-              if (DETAIL_PATH)
-                navigate(DETAIL_PATH, {
-                  state: {
-                    name: "박서준",
-                    age: "24",
-                    field: "영상 촬영/편집",
-                    temp: "36.9°C",
-                    liked: false,
-                    period: "2025.03 ~ 2025.04",
-                  },
-                });
-            }}
-          />
+          {/* [API] 상태 표시 (UI 변경 없이 텍스트만) */}
+          {loading && (
+            <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
+          )}
+          {error && !loading && (
+            <div style={{ fontSize: 12, color: "#D00" }}>
+              목록을 불러오지 못했습니다.
+            </div>
+          )}
+
+          {items.map((it) => (
+            <CandidateCard
+              key={it.id}
+              id={it.id}
+              type="planner"
+              name={it.name}
+              age={it.age}
+              field={it.field}
+              temp={it.temp}
+              liked={it.liked}
+              period={it.period}
+              onOpen={() => {
+                if (DETAIL_PATH)
+                  navigate(DETAIL_PATH, {
+                    state: {
+                      name: it.name,
+                      age: it.age,
+                      field: it.field,
+                      temp: it.temp,
+                      liked: it.liked,
+                      period: it.period,
+                      id: it.id,
+                    },
+                  });
+              }}
+            />
+          ))}
         </div>
 
         {/* ===== Bottom Sheet (필터) ===== */}

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BackIconSrc from "../../../assets/Back.svg";
 import HeartIconSrc from "../../../assets/Heart.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
+import { useHeart } from "../../../contexts/heartcontext"; // [API]
 
 // 공통 프레임 규격 (찜 페이지와 동일)
 const STATUS_H = 59;
@@ -221,11 +222,33 @@ const BackIcon = (onClick) => (
 export default function DetailStudent() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [liked, setLiked] = React.useState(false);
+  const [liked, setLiked] = React.useState(false); // ← 기존 로컬 상태 유지(삭제 안 함)
+
+  // [API] 전역 하트 훅 + 타입/식별자
+  const { isHeart, toggle } = useHeart(); // [API]
+  const HEART_TYPE = "business"; // [API] 학생이 보는 상세 → 가게/공고라 가정
+  const targetId = state?.id ?? state?.postId ?? state?.businessId; // [API]
 
   // 전달된 제목/설명 (없으면 기본값)
   const jobTitle = state?.title ?? "디저트 메뉴 SNS 홍보 구인";
   const jobSubtitle = state?.subtitle ?? "카페 | 음료점업 · 모집 중";
+
+  // [API] 전역 상태와 로컬 liked 동기화(삭제 없이 유지)
+  React.useEffect(() => {
+    if (targetId) setLiked(isHeart(HEART_TYPE, targetId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetId, HEART_TYPE, isHeart]);
+
+  // [API] 하트 토글 핸들러 (기존 setLiked 사용 유지)
+  const handleToggle = async () => {
+    if (!targetId) return; // id 없으면 그냥 무시
+    setLiked((v) => !v); // 낙관적 UI
+    try {
+      await toggle(HEART_TYPE, targetId);
+    } catch {
+      setLiked((v) => !v); // 실패 시 롤백
+    }
+  };
 
   return (
     <div style={containerStyle}>
@@ -255,7 +278,7 @@ export default function DetailStudent() {
                 src={liked ? HeartIconSrc : EmptyHeartSrc}
                 alt="좋아요"
                 style={heartTopBtn}
-                onClick={() => setLiked((v) => !v)}
+                onClick={handleToggle} // [API] ← setLiked 직접 호출 대신
               />
             </div>
 
@@ -310,11 +333,7 @@ export default function DetailStudent() {
 
         {/* Bottom Actions */}
         <div style={bottomBar}>
-          <button
-            type="button"
-            style={btnOutline}
-            onClick={() => setLiked((v) => !v)}
-          >
+          <button type="button" style={btnOutline} onClick={handleToggle}>
             <img
               src={liked ? HeartIconSrc : EmptyHeartSrc}
               alt="하트"
