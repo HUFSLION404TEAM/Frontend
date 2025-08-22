@@ -7,6 +7,44 @@ import NaverIconScr from "../../../assets/naver.svg";
 const GAP = 15; // 버튼 간 간격(px)
 const LOGO_COLOR = "#0080FF";
 
+// =========================
+// 환경변수로 서버/엔드포인트 설정
+// =========================
+// 예) Spring Security 기본: /oauth2/authorization/{provider}    (기본값)
+// 예) 팀 커스텀        : /auth/{provider}/start?state={state}&returnTo={returnTo}
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr";
+
+const OAUTH_PATH_TEMPLATE =
+  process.env.REACT_APP_OAUTH_PATH_TEMPLATE ||
+  "/oauth2/authorization/{provider}"; // ← 기본값(문서 없어도 대부분 이걸로 동작)
+
+// 템플릿 치환 유틸
+function fillTemplate(tpl, kv) {
+  return tpl.replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(kv[k] ?? ""));
+}
+
+// ✅ OAuth 시작
+function startOAuth(provider) {
+  const state = Array.from(crypto.getRandomValues(new Uint32Array(4))).join(
+    "-"
+  );
+  sessionStorage.setItem("oauth_state", state);
+
+  // 로그인 완료 후 프론트에서 처리할 경로(커스텀 플로우일 때 사용)
+  const returnTo = `${window.location.origin}/auth/complete`;
+
+  const url =
+    API_BASE +
+    fillTemplate(OAUTH_PATH_TEMPLATE, {
+      provider,
+      state,
+      returnTo,
+    });
+
+  window.location.href = url;
+}
+
 function SocialButton({
   icon,
   label,
@@ -30,8 +68,7 @@ function SocialButton({
         background: bg,
         color,
         border,
-        // 텍스트 정중앙 유지 + 아이콘은 absolute로 왼쪽 배치
-        padding: "15px 73px", // Figma 참고값
+        padding: "15px 73px",
         boxSizing: "border-box",
         cursor: "pointer",
       }}
@@ -62,12 +99,6 @@ function SocialButton({
 }
 
 const Login = () => {
-  const handleLogin = (provider) => {
-    // TODO: 나중에 실제 OAuth 연동
-    // 예: navigate(`/auth/${provider}`) 또는 openPopup(...)
-    console.log(`clicked: ${provider}`);
-  };
-
   return (
     <div
       style={{
@@ -81,7 +112,7 @@ const Login = () => {
       <div
         style={{
           width: "100%",
-          maxWidth: 390, // iPhone 13 기준 프레임 폭
+          maxWidth: 390,
           padding: "48px 24px 32px",
           boxSizing: "border-box",
           margin: "0 auto",
@@ -89,16 +120,7 @@ const Login = () => {
       >
         {/* 로고 */}
         <div style={{ display: "grid", placeItems: "center" }}>
-          {/* case 1) SVG가 currentColor를 쓰는 경우: color만 주면 됨 */}
           <Loginlogo style={{ color: LOGO_COLOR, width: 259, height: 126 }} />
-
-          {/* case 2) 만약 SVG 내부에 fill이 박혀 있어 색이 안 바뀐다면
-              아래 주석을 해제해서 강제로 컬러 지정 가능
-          <style>{`
-            .loginLogo path[fill]:not([fill="none"]) { fill: ${LOGO_COLOR} !important; }
-          `}</style>
-          <Loginlogo className="loginLogo" style={{ width: 259, height: 126 }} />
-          */}
         </div>
 
         {/* 서브 카피 */}
@@ -128,7 +150,7 @@ const Login = () => {
             bg="#FFFFFF"
             color="#000000"
             border="1px solid #EDE5E5"
-            onClick={() => handleLogin("google")}
+            onClick={() => startOAuth("google")}
           />
 
           <SocialButton
@@ -137,7 +159,7 @@ const Login = () => {
             bg="#FEE500"
             color="#000000"
             border="1px solid #EDE5E5"
-            onClick={() => handleLogin("kakao")}
+            onClick={() => startOAuth("kakao")}
           />
 
           <SocialButton
@@ -146,7 +168,7 @@ const Login = () => {
             bg="#03C75A"
             color="#FFFFFF"
             border="none"
-            onClick={() => handleLogin("naver")}
+            onClick={() => startOAuth("naver")}
           />
         </div>
       </div>
