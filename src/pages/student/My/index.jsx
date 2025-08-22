@@ -1,9 +1,19 @@
+// src/pages/student/My/index.jsx
 import React, { useEffect, useRef, useState } from "react";
 import StarIconSrc from "../../../assets/Star.svg";
 import BackIconSrc from "../../../assets/Back.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import DoneIconScr from "../../../assets/Done.svg";
 import { useNavigate } from "react-router-dom";
+
+// ✅ [연동] 마이페이지 API
+import {
+  getPortfolios,
+  addPortfolio,
+  updatePortfolio,
+  deletePortfolio,
+  getTemperature, // 필요시 사용 (현재 화면 표시는 더미)
+} from "../../../api/mypage";
 
 const STATUS_H = 44; // 상태바
 const HEADER_H = 45; // 헤더
@@ -126,13 +136,8 @@ const card = {
   boxSizing: "border-box",
 };
 
-/* ===== 매칭 이력(단일 컨테이너 + 내부 스크롤) ===== */
-const matchContainer = {
-  ...card,
-  height: 121,
-  padding: 9,
-  overflowY: "auto",
-};
+/* ===== 매칭 이력 ===== */
+const matchContainer = { ...card, height: 121, padding: 9, overflowY: "auto" };
 const matchRow = {
   display: "flex",
   alignItems: "center",
@@ -177,7 +182,7 @@ const dropdownPanelFloat = {
   position: "absolute",
   zIndex: 11,
   width: 320,
-  height: 108, // 36 * 3
+  height: 108,
   borderRadius: "0 0 10px 10px",
   background: "rgba(243,244,246,0.6)",
   boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
@@ -201,7 +206,7 @@ const dropdownOption = {
 };
 const dropdownOptionActive = { background: "rgba(26,150,254,0.15)" };
 
-/* ===== 포트폴리오 리스트 독립 스크롤 ===== */
+/* ===== 포트폴리오 리스트 ===== */
 const pfListWrap = {
   maxHeight: 330,
   overflowY: "auto",
@@ -209,7 +214,7 @@ const pfListWrap = {
   paddingRight: 2,
 };
 
-/* ===== 편집 헤더(뒤로가기) ===== */
+/* ===== 편집 헤더 ===== */
 const simpleHeaderStyle = {
   position: "absolute",
   top: STATUS_H,
@@ -239,7 +244,7 @@ const headerTitleStyle = {
   color: "#111",
 };
 
-/* ===== 편집 화면 영역 ===== */
+/* ===== 편집 화면 ===== */
 const editWrap = {
   position: "absolute",
   top: STATUS_H + 49,
@@ -282,10 +287,10 @@ const nameRow = {
   width: 320,
   display: "flex",
   alignItems: "center",
-  justifyContent: "center", // 이름 가운데
+  justifyContent: "center",
   gap: 8,
   marginBottom: 8,
-  position: "relative", // 배지 absolute 기준
+  position: "relative",
 };
 const verifyChip = (on) => ({
   display: "inline-flex",
@@ -344,7 +349,7 @@ const scopeOpt = (active) => ({
   fontWeight: active ? 700 : 400,
 });
 
-/* ===== 인증 버튼(파란 채움) ===== */
+/* ===== 인증 버튼 ===== */
 const verifyBtn = {
   width: 68,
   height: 42,
@@ -382,9 +387,10 @@ const modalBox = {
 
 const MyStudent = () => {
   /* ===== 공통 상태 ===== */
-  const [view, setView] = useState("main"); // 'main' | 'edit'
+  const [view, setView] = useState("main"); // 'main' | 'edit' | 'pfWrite'
   const navigate = useNavigate();
-  /* ===== 메인: 포트폴리오 선택 드롭다운 ===== */
+
+  /* ===== 드롭다운 ===== */
   const [ddOpen, setDdOpen] = useState(false);
   const [selected, setSelected] = useState("포트폴리오 A");
   const frameRef = useRef(null);
@@ -394,7 +400,7 @@ const MyStudent = () => {
     if (!frameRef.current || !triggerRef.current) return;
     const fr = frameRef.current.getBoundingClientRect();
     const tr = triggerRef.current.getBoundingClientRect();
-    setDdPos({ left: tr.left - fr.left, top: tr.bottom - fr.top + 8 }); // top만 사용
+    setDdPos({ left: tr.left - fr.left, top: tr.bottom - fr.top + 8 });
   };
   useEffect(() => {
     if (ddOpen) {
@@ -408,22 +414,71 @@ const MyStudent = () => {
     }
   }, [ddOpen]);
 
-  /* ===== 메인: 프로젝트 리스트 ===== */
+  /* ===== 포트폴리오 목록 ===== */
   const [projects, setProjects] = useState([
     { id: 1, title: "프로젝트A", period: "2025.08.01 - 2025.08.07" },
     { id: 2, title: "프로젝트B", period: "2025.08.01 - 2025.08.07" },
     { id: 3, title: "프로젝트C", period: "2025.08.01 - 2025.08.07" },
   ]);
-  const addProject = () => {
-    const n = projects.length + 1;
-    setProjects((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        title: `프로젝트${n}`,
-        period: "2025.08.01 - 2025.08.07",
-      },
-    ]);
+
+  // 현재 편집 대상 (없으면 추가 모드)
+  const [editing, setEditing] = useState(null);
+
+  // 서버 목록 새로고침 (응답이 "정상 배열"일 때만 덮어쓰기)
+  const refreshPortfolios = async () => {
+    try {
+      const res = await getPortfolios();
+      const list = res?.data?.data;
+      if (Array.isArray(list)) {
+        setProjects(
+          list.map((p) => ({
+            id:
+              p.id ??
+              p.portfolioId ??
+              p.portfolio_id ??
+              String(p.id ?? p.portfolioId ?? Date.now()),
+            serverId: p.id ?? p.portfolioId ?? p.portfolio_id ?? null, // ← API용 id
+            title: p.title ?? "제목 없음",
+            period:
+              p.startDate && p.endDate
+                ? `${p.startDate} - ${p.endDate}`
+                : p.period ?? "기간 미정",
+            award: p.award,
+            process: p.process,
+            output: p.output,
+            growth: p.growth,
+            scope: p.scope,
+          }))
+        );
+      } // 배열이 아니면(에러/미연동) 현재 목록 유지
+    } catch (e) {
+      console.warn("refreshPortfolios failed", e);
+      // 실패해도 현재 목록 유지
+    }
+  };
+
+  useEffect(() => {
+    refreshPortfolios();
+    // getTemperature() 등은 필요해지면 여기에
+  }, []);
+
+  // ✅ 단건 삭제 (낙관적 업데이트 + 안전 재조회)
+  const handleDeleteOne = async (item) => {
+    // 화면에서 먼저 제거 (낙관적)
+    setProjects((prev) => prev.filter((p) => p.id !== item.id));
+
+    const targetId = item?.serverId ?? item?.id;
+    try {
+      if (targetId == null) throw new Error("No portfolio id");
+      await deletePortfolio(targetId);
+    } catch (e) {
+      console.warn("deletePortfolio failed", e);
+      // 실패 시: 사용자 경험상 롤백까진 하지 않고 토스트/알럿만 고려 가능
+      // alert("삭제에 실패했습니다. 새로고침 후 다시 시도해주세요.");
+    }
+
+    // 서버 재조회 (정상 배열일 때만 목록 갱신 → 빈/에러면 현재 화면 유지)
+    await refreshPortfolios();
   };
 
   /* ===== 편집: 공개 범위/인증 ===== */
@@ -450,14 +505,76 @@ const MyStudent = () => {
     <div style={containerStyle}>
       <div style={frameStyle} ref={frameRef}>
         <div style={statusBarStyle} />
-        {/* 🔽 포트폴리오 작성 오버레이 (frame 최상단에서 조건 렌더) */}
+
+        {/* 🔽 포트폴리오 작성/수정 오버레이 */}
         {view === "pfWrite" && (
           <PortfolioWriteOverlay
-            onClose={() => setView("main")}
-            onDone={(data) => {
-              // 필요시 저장/라우팅 처리 후
+            initial={editing}
+            onClose={() => {
               setView("main");
+              setEditing(null);
             }}
+            onDone={async (payload) => {
+              try {
+                if (editing?.id) {
+                  // 수정
+                  const { data: saved } = await updatePortfolio(
+                    editing.serverId ?? editing.id,
+                    payload
+                  );
+                  const merged = saved || payload;
+                  setProjects((prev) =>
+                    prev.map((p) =>
+                      p.id === editing.id ? { ...p, ...merged } : p
+                    )
+                  );
+                } else {
+                  // 추가
+                  const { data: created } = await addPortfolio(payload);
+                  const newItem = created
+                    ? {
+                        id:
+                          created.id ??
+                          created.portfolioId ??
+                          String(Date.now()),
+                        serverId: created.id ?? created.portfolioId ?? null,
+                        title: created.title,
+                        period:
+                          created.startDate && created.endDate
+                            ? `${created.startDate} - ${created.endDate}`
+                            : created.period ?? payload.period,
+                        award: created.award,
+                        process: created.process,
+                        output: created.output,
+                        growth: created.growth,
+                        scope: created.scope,
+                      }
+                    : {
+                        id: String(Date.now()),
+                        serverId: null,
+                        ...payload,
+                      };
+                  setProjects((prev) => [newItem, ...prev]);
+                }
+                setView("main");
+                setEditing(null);
+              } catch (e) {
+                console.error(e);
+                alert("저장에 실패했습니다.");
+              }
+            }}
+            onDelete={
+              editing?.id
+                ? async () => {
+                    try {
+                      await handleDeleteOne(editing);
+                    } finally {
+                      setView("main");
+                      setEditing(null);
+                    }
+                  }
+                : undefined
+            }
           />
         )}
 
@@ -501,7 +618,7 @@ const MyStudent = () => {
               </button>
             </div>
 
-            {/* 프로필 행 (사각 아바타) */}
+            {/* 프로필 행 */}
             <div
               style={{
                 width: 320,
@@ -593,7 +710,13 @@ const MyStudent = () => {
               }}
             >
               <div style={title16}>포트폴리오</div>
-              <button style={pillBtn} onClick={() => setView("pfWrite")}>
+              <button
+                style={pillBtn}
+                onClick={() => {
+                  setEditing(null); // 추가 모드
+                  setView("pfWrite");
+                }}
+              >
                 추가
               </button>
             </div>
@@ -618,7 +741,7 @@ const MyStudent = () => {
               포트폴리오 선택하기
             </button>
 
-            {/* 리스트 (독립 스크롤) */}
+            {/* 리스트 */}
             <div style={pfListWrap}>
               {projects.map((p, idx) => (
                 <div
@@ -647,9 +770,19 @@ const MyStudent = () => {
                     >
                       {p.title}
                     </div>
-                    <div style={{ ...body12, color: "#777" }}>{p.period}</div>
+                    <div style={{ ...body12, color: "#777" }}>
+                      {p.period || "-"}
+                    </div>
                   </div>
-                  <button style={tinyEditBtn}>수정</button>
+                  <button
+                    style={tinyEditBtn}
+                    onClick={() => {
+                      setEditing(p);
+                      setView("pfWrite");
+                    }}
+                  >
+                    수정
+                  </button>
                 </div>
               ))}
             </div>
@@ -658,7 +791,7 @@ const MyStudent = () => {
           </div>
         )}
 
-        {/* 포트폴리오 드롭다운(플로팅) — (가로 중앙 유지) */}
+        {/* 포트폴리오 드롭다운(플로팅) */}
         {view === "main" && ddOpen && (
           <>
             <div
@@ -741,7 +874,7 @@ const MyStudent = () => {
                     position: "absolute",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    left: "57%", // 이름 너비 + 여백
+                    left: "57%",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -776,9 +909,7 @@ const MyStudent = () => {
                     if (scopeBtnRef.current && frameRef.current) {
                       const fr = frameRef.current.getBoundingClientRect();
                       const br = scopeBtnRef.current.getBoundingClientRect();
-                      setScopePos({
-                        top: br.bottom - fr.top + 6, // 버튼 아래 위치
-                      });
+                      setScopePos({ top: br.bottom - fr.top + 6 });
                     }
                     setScopeOpen((v) => !v);
                   }}
@@ -796,34 +927,26 @@ const MyStudent = () => {
                 </button>
               </div>
 
-              {/* 기본정보 */}
+              {/* 기본정보 (현재는 더미) */}
               <div style={sectionTitle}>기본정보</div>
               <div style={infoCard}>
                 <div style={infoGrid}>
                   <div style={infoLabel}>생년월일(나이)</div>
                   <div style={infoValue}>2003.02.14</div>
-
                   <div style={infoLabel}>전화번호</div>
                   <div style={infoValue}>010-1234-5678</div>
-
                   <div style={infoLabel}>이메일</div>
                   <div style={infoValue}>1234@hufs.ac.kr</div>
-
                   <div style={infoLabel}>지역</div>
                   <div style={infoValue}>경기도 용인시</div>
-
                   <div style={infoLabel}>학력(재학/휴학/졸업)</div>
                   <div style={infoValue}>재학</div>
-
                   <div style={infoLabel}>학교</div>
                   <div style={infoValue}>한국외국어대학교</div>
-
                   <div style={infoLabel}>전공</div>
                   <div style={infoValue}>경영학</div>
-
                   <div style={infoLabel}>경력</div>
                   <div style={infoValue}>2년</div>
-
                   <div style={infoLabel}>온도</div>
                   <div style={infoValue}>38.5</div>
                 </div>
@@ -873,7 +996,7 @@ const MyStudent = () => {
               <div style={{ height: 24 }} />
             </div>
 
-            {/* 공개 범위 플로팅 패널 — 오른쪽 여백 38px 고정 */}
+            {/* 공개 범위 플로팅 패널 */}
             {scopeOpen && (
               <div
                 style={{ position: "absolute", inset: 0, zIndex: 19 }}
@@ -883,7 +1006,7 @@ const MyStudent = () => {
                   style={{
                     ...scopePanel,
                     top: scopePos.top,
-                    right: 38, // ← 프레임 오른쪽에서 38px
+                    right: 38,
                     left: "auto",
                     transform: "none",
                   }}
@@ -954,7 +1077,9 @@ const MyStudent = () => {
     </div>
   );
 };
-function PortfolioWriteOverlay({ onClose, onDone }) {
+
+// ===== 포트폴리오 작성/수정 오버레이 =====
+function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
   const [title, setTitle] = useState("");
   const [period, setPeriod] = useState("2024.02.14 ~ 2024.03.20");
   const [award, setAward] = useState("");
@@ -969,6 +1094,26 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
   const overlayRef = useRef(null);
   const [panelTop, setPanelTop] = useState(0);
 
+  useEffect(() => {
+    if (initial) {
+      setTitle(initial.title || "");
+      setPeriod(initial.period || "");
+      setAward(initial.award || "");
+      setProcess(initial.process || "");
+      setOutput(initial.output || "");
+      setGrowth(initial.growth || "");
+      setScope(initial.scope || "전체 공개");
+    } else {
+      setTitle("");
+      setPeriod("2024.02.14 ~ 2024.03.20");
+      setAward("");
+      setProcess("");
+      setOutput("");
+      setGrowth("");
+      setScope("전체 공개");
+    }
+  }, [initial]);
+
   const openScope = () => {
     if (scopeBtnRef.current && overlayRef.current) {
       const fr = overlayRef.current.getBoundingClientRect();
@@ -978,19 +1123,19 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
     setScopeOpen((v) => !v);
   };
 
-  // ====== 이 컴포넌트 전용 스타일(기존 것 안 건드림) ======
+  // ====== 이 컴포넌트 전용 스타일 ======
   const overlay = {
     position: "absolute",
     inset: 0,
     background: "#FFF",
-    zIndex: 20, // 프레임 위에 덮기
+    zIndex: 20,
   };
   const header = {
     position: "absolute",
-    top: 44, // STATUS_H
+    top: 44,
     left: 0,
     right: 0,
-    height: 49, // HEADER_H
+    height: 49,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1027,10 +1172,11 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
     background: "#FFF",
     cursor: "pointer",
   };
+  const deleteBtn = { ...editBtn, right: 86 };
   const scroll = {
     position: "absolute",
     top: 44 + 49,
-    bottom: 80, // CTA 여유
+    bottom: 80,
     left: 0,
     right: 0,
     overflowY: "auto",
@@ -1105,7 +1251,7 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
     justifyContent: "space-between",
     marginTop: 12,
   };
-  const scopeBtn = {
+  const scopeBtnLocal = {
     width: 120,
     height: 34,
     borderRadius: 8,
@@ -1135,7 +1281,7 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
     background: "rgba(255,255,255,0.98)",
     boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
     overflow: "hidden",
-    right: 38, // ← 오른쪽 여백 38px 고정
+    right: 38,
     top: panelTop,
   };
   const opt = (active) => ({
@@ -1177,6 +1323,14 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
       <div style={header}>
         <img src={BackIconSrc} alt="뒤로가기" style={back} onClick={onClose} />
         <div style={titleH}>포트폴리오</div>
+
+        {/* 편집일 때만 삭제 버튼 노출 */}
+        {initial?.id && (
+          <button type="button" style={deleteBtn} onClick={onDelete}>
+            삭제
+          </button>
+        )}
+        {/* (기존) 수정 버튼은 그대로 유지 */}
         <button type="button" style={editBtn} onClick={() => {}}>
           수정
         </button>
@@ -1242,12 +1396,19 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
         />
 
         {/* 공개여부 */}
-        <div style={scopeRow}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 12,
+          }}
+        >
           <div style={label}>공개여부</div>
           <button
             ref={scopeBtnRef}
             type="button"
-            style={scopeBtn}
+            style={scopeBtnLocal}
             onClick={openScope}
           >
             <span
@@ -1262,6 +1423,7 @@ function PortfolioWriteOverlay({ onClose, onDone }) {
             <span style={caret} />
           </button>
         </div>
+
         <div style={{ height: 24 }} />
       </div>
 
