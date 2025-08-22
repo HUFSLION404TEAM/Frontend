@@ -3,6 +3,15 @@ import StarIconSrc from "../../../assets/Star.svg";
 import BackIconSrc from "../../../assets/Back.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 
+// ✅ API (학생과 같은 파일에서 불러옵니다)
+import {
+  getBusinesses,
+  addBusiness,
+  updateBusiness,
+  deleteBusiness,
+  // updateBusinessVisibility, // 공개여부 엔드포인트는 필요 시 사용
+} from "../../../api/mypage";
+
 const STATUS_H = 44;
 const HEADER_H = 45;
 const SIDE_GAP = 10;
@@ -138,59 +147,6 @@ const tinyBtn = {
   cursor: "pointer",
 };
 
-// /* 파란 드롭다운 트리거 */
-// const blueTrigger = {
-//   width: 320,
-//   height: 30,
-//   borderRadius: 10,
-//   background: "#1A96FE",
-//   color: "#FFF",
-//   display: "inline-flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   gap: 8,
-//   fontFamily: "Pretendard, system-ui, -apple-system",
-//   fontWeight: 600,
-//   fontSize: 12,
-//   letterSpacing: "-0.3px",
-//   boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
-//   border: "none",
-//   outline: "none",
-//   cursor: "pointer",
-// };
-// const floatOverlay = {
-//   position: "absolute",
-//   inset: 0,
-//   zIndex: 10,
-//   background: "transparent",
-// };
-// const dropdownPanelFloat = {
-//   position: "absolute",
-//   zIndex: 11,
-//   width: 320,
-//   borderRadius: "0 0 10px 10px",
-//   background: "rgba(243,244,246,0.6)",
-//   boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
-//   backdropFilter: "blur(1px)",
-//   overflow: "hidden",
-//   display: "flex",
-//   flexDirection: "column",
-// };
-// const dropdownOption = {
-//   height: 36,
-//   display: "flex",
-//   alignItems: "center",
-//   justifyContent: "center",
-//   background: "rgba(243,244,246,0.6)",
-//   borderBottom: "1px solid #EAEAEA",
-//   fontFamily: "Pretendard, system-ui, -apple-system",
-//   fontSize: 12,
-//   color: "#111",
-//   letterSpacing: "-0.3px",
-//   backdropFilter: "blur(1px)",
-// };
-// const dropdownOptionActive = { background: "rgba(26,150,254,0.15)" };
-
 /* 리스트 카드 */
 const companyCard = {
   ...card,
@@ -267,7 +223,7 @@ const infoLabel = { ...body12, color: "#777" };
 const infoValue = { ...body12, color: "#111", textAlign: "right" };
 
 /* ===== 업체등록 오버레이 ===== */
-function CompanyWriteOverlay({ onClose, onDone }) {
+function CompanyWriteOverlay({ onClose, onDone, initial, onDelete }) {
   const [kind, setKind] = useState("");
   const [phone, setPhone] = useState("");
   const [addr, setAddr] = useState("");
@@ -278,6 +234,25 @@ function CompanyWriteOverlay({ onClose, onDone }) {
   const scopeBtnRef = useRef(null);
   const overlayRef = useRef(null);
   const [panelTop, setPanelTop] = useState(0);
+
+  // 편집일 때 기존값 채우기
+  useEffect(() => {
+    if (initial) {
+      setKind(initial.kind || initial.category || "");
+      setPhone(initial.phone || "");
+      setAddr(initial.addr || initial.address || "");
+      setBizno(initial.bizno || initial.businessNumber || "");
+      setAbout(initial.about || initial.description || "");
+      setScope(initial.scope || "공개 범위 설정");
+    } else {
+      setKind("");
+      setPhone("");
+      setAddr("");
+      setBizno("");
+      setAbout("");
+      setScope("공개 범위 설정");
+    }
+  }, [initial]);
 
   const openScope = () => {
     if (scopeBtnRef.current && overlayRef.current) {
@@ -402,7 +377,7 @@ function CompanyWriteOverlay({ onClose, onDone }) {
     background: "rgba(255,255,255,0.98)",
     boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
     overflow: "hidden",
-    right: 38, // Figma 오른쪽 여백
+    right: 38,
     top: panelTop,
   };
   const opt = (active) => ({
@@ -443,6 +418,49 @@ function CompanyWriteOverlay({ onClose, onDone }) {
       <div style={header}>
         <img src={BackIconSrc} alt="뒤로가기" style={back} onClick={onClose} />
         <div style={titleH}>업체등록</div>
+
+        {/* 편집 모드일 때만 삭제 버튼 */}
+        {initial?.id && (
+          <button
+            type="button"
+            style={{
+              position: "absolute",
+              right: 86,
+              top: "50%",
+              transform: "translateY(-50%)",
+              padding: "6px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              border: "1px solid #E5E5EA",
+              borderRadius: 8,
+              background: "#FFF",
+              cursor: "pointer",
+            }}
+            onClick={onDelete}
+          >
+            삭제
+          </button>
+        )}
+        {/* (기존) 수정 버튼은 유지 */}
+        <button
+          type="button"
+          style={{
+            position: "absolute",
+            right: 16,
+            top: "50%",
+            transform: "translateY(-50%)",
+            padding: "6px 12px",
+            fontSize: 12,
+            fontWeight: 600,
+            border: "1px solid #E5E5EA",
+            borderRadius: 8,
+            background: "#FFF",
+            cursor: "pointer",
+          }}
+          onClick={() => {}}
+        >
+          수정
+        </button>
       </div>
 
       <div style={scroll}>
@@ -532,7 +550,16 @@ function CompanyWriteOverlay({ onClose, onDone }) {
         <button
           type="button"
           style={ctaBtn}
-          onClick={() => onDone?.({ kind, phone, addr, bizno, about, scope })}
+          onClick={() =>
+            onDone?.({
+              kind,
+              phone,
+              addr,
+              bizno,
+              about,
+              scope,
+            })
+          }
         >
           완료
         </button>
@@ -544,39 +571,71 @@ function CompanyWriteOverlay({ onClose, onDone }) {
 /* ===== 메인 페이지 ===== */
 export default function MyOwner() {
   const [view, setView] = useState("main"); // 'main' | 'edit'
-  // // 드롭다운
-  // const [ddOpen, setDdOpen] = useState(false);
-  // const [selected, setSelected] = useState("업체 선택하기");
-  // const frameRef = useRef(null);
-  // const triggerRef = useRef(null);
-  // const [ddTop, setDdTop] = useState(0);
-
-  // const placeDropdown = () => {
-  //   if (!frameRef.current || !triggerRef.current) return;
-  //   const fr = frameRef.current.getBoundingClientRect();
-  //   const tr = triggerRef.current.getBoundingClientRect();
-  //   setDdTop(tr.bottom - fr.top + 8);
-  // };
-  // useEffect(() => {
-  //   if (!ddOpen) return;
-  //   placeDropdown();
-  //   window.addEventListener("resize", placeDropdown);
-  //   window.addEventListener("scroll", placeDropdown, true);
-  //   return () => {
-  //     window.removeEventListener("resize", placeDropdown);
-  //     window.removeEventListener("scroll", placeDropdown, true);
-  //   };
-  // }, [ddOpen]);
-
-  // 리스트(예시)
-  const companies = [
-    { id: 1, name: "업체A", meta: "경기도 용인시 · 카페" },
-    { id: 2, name: "업체B", meta: "수원시 팔달구 · 분식" },
-    { id: 3, name: "업체C", meta: "영통구 · 디저트" },
-  ];
-
-  // 업체등록 오버레이
   const [regOpen, setRegOpen] = useState(false);
+
+  // 서버 목록
+  const [companies, setCompanies] = useState([
+    // 초기 더미 (서버 응답 오기 전 화면용)
+    { id: "dummy-1", name: "업체A", meta: "경기도 용인시 · 카페" },
+    { id: "dummy-2", name: "업체B", meta: "수원시 팔달구 · 분식" },
+    { id: "dummy-3", name: "업체C", meta: "영통구 · 디저트" },
+  ]);
+
+  // 편집 대상
+  const [editing, setEditing] = useState(null);
+
+  // 목록 재조회 (정상 배열일 때만 덮어쓰기)
+  const refreshBusinesses = async () => {
+    try {
+      const res = await getBusinesses();
+      const list = res?.data?.data;
+      if (Array.isArray(list)) {
+        setCompanies(
+          list.map((b) => ({
+            id:
+              b.id ??
+              b.businessId ??
+              b.business_id ??
+              String(b.id ?? Date.now()),
+            serverId: b.id ?? b.businessId ?? b.business_id ?? null,
+            name: b.name ?? b.storeName ?? b.businessName ?? "업체",
+            meta: `${b.address ?? b.addr ?? ""}${
+              b.address || b.addr ? " · " : ""
+            }${b.category ?? b.kind ?? ""}`,
+            kind: b.kind ?? b.category,
+            phone: b.phone ?? b.contact,
+            addr: b.address ?? b.addr,
+            bizno: b.bizno ?? b.businessNumber ?? b.registerNumber,
+            about: b.about ?? b.description,
+            scope:
+              b.scope ??
+              (b.visibility === "PRIVATE" ? "나만 보기" : "전체 공개"),
+          }))
+        );
+      }
+    } catch (e) {
+      console.warn("refreshBusinesses failed", e);
+      // 실패 시, 현재 목록 유지
+    }
+  };
+
+  useEffect(() => {
+    refreshBusinesses();
+  }, []);
+
+  // 단건 삭제: 낙관적 업데이트 + 안전 재조회
+  const handleDeleteOne = async (item) => {
+    setCompanies((prev) => prev.filter((c) => c.id !== item.id));
+    const targetId = item?.serverId ?? item?.id;
+    try {
+      if (targetId == null) throw new Error("No business id");
+      await deleteBusiness(targetId);
+    } catch (e) {
+      console.warn("deleteBusiness failed", e);
+      // 실패 시에도 앱 크래시 방지
+    }
+    await refreshBusinesses();
+  };
 
   return (
     <div style={containerStyle}>
@@ -610,7 +669,7 @@ export default function MyOwner() {
               </button>
             </div>
 
-            {/* 프로필 행 */}
+            {/* 프로필 행 (요약) */}
             <div
               style={{
                 width: 320,
@@ -633,7 +692,6 @@ export default function MyOwner() {
                 <div style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>
                   업체 이름
                 </div>
-                {/* 요약 항목 4줄(작은 회색 라벨 + 우측 값) → 간단 요약용 */}
                 <div
                   style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}
                 >
@@ -657,7 +715,7 @@ export default function MyOwner() {
               </div>
             </div>
 
-            {/* 매칭 이력 */}
+            {/* 매칭 이력 (더미 표시) */}
             <div style={{ ...title16, margin: "8px 0 8px" }}>매칭 이력</div>
             <div style={matchContainer}>
               <div style={matchRow}>
@@ -717,30 +775,16 @@ export default function MyOwner() {
               }}
             >
               <div style={title16}>업체</div>
-              <button style={pillBtn} onClick={() => setRegOpen(true)}>
+              <button
+                style={pillBtn}
+                onClick={() => {
+                  setEditing(null);
+                  setRegOpen(true);
+                }}
+              >
                 추가
               </button>
             </div>
-
-            {/* 드롭다운 트리거
-            <button
-              ref={triggerRef}
-              type="button"
-              style={blueTrigger}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setDdOpen((v) => !v)}
-            >
-              <img
-                src={DownBarSrc}
-                alt="down"
-                style={{
-                  width: 10,
-                  height: 10,
-                  filter: "brightness(0) invert(1)",
-                }}
-              />
-              {selected}
-            </button> */}
 
             {/* 업체 리스트 */}
             <div
@@ -779,7 +823,15 @@ export default function MyOwner() {
                       {c.meta}
                     </div>
                   </div>
-                  <button style={tinyBtn}>수정</button>
+                  <button
+                    style={tinyBtn}
+                    onClick={() => {
+                      setEditing(c);
+                      setRegOpen(true);
+                    }}
+                  >
+                    수정
+                  </button>
                 </div>
               ))}
             </div>
@@ -788,44 +840,6 @@ export default function MyOwner() {
           </div>
         )}
 
-        {/* 드롭다운 패널
-        {ddOpen && (
-          <>
-            <div style={floatOverlay} onClick={() => setDdOpen(false)} />
-            <div
-              style={{
-                ...dropdownPanelFloat,
-                top: ddTop,
-                left: "50%",
-                transform: "translateX(-50%)",
-              }}
-            >
-              {["업체 A", "업체 B", "업체 C"].map((opt, i, arr) => {
-                const active = selected === opt;
-                return (
-                  <div
-                    key={opt}
-                    style={{
-                      ...dropdownOption,
-                      ...(active ? dropdownOptionActive : null),
-                      borderBottom:
-                        i === arr.length - 1
-                          ? "none"
-                          : dropdownOption.borderBottom,
-                    }}
-                    onClick={() => {
-                      setSelected(opt);
-                      setDdOpen(false);
-                    }}
-                  >
-                    {opt}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
- */}
         {/* ===== 프로필 편집 ===== */}
         {view === "edit" && (
           <>
@@ -869,7 +883,7 @@ export default function MyOwner() {
                 </div>
               </div>
 
-              {/* 기본정보 */}
+              {/* 기본정보 (더미) */}
               <div style={sectionTitle}>기본정보</div>
               <div style={infoCard}>
                 <div
@@ -884,22 +898,17 @@ export default function MyOwner() {
                 <div style={infoGrid}>
                   <div style={infoLabel}>업종</div>
                   <div style={infoValue}>일반음식점</div>
-
                   <div style={infoLabel}>연락처</div>
                   <div style={infoValue}>010-1234-5678</div>
-
                   <div style={infoLabel}>업체 위치</div>
                   <div style={infoValue}>경기도 용인시</div>
-
                   <div style={infoLabel}>사업자번호</div>
                   <div style={infoValue}>123-45-5678</div>
-
                   <div style={infoLabel}>온도</div>
                   <div style={infoValue}>38.5 °C</div>
                 </div>
               </div>
 
-              {/* 간단한 가게소개 */}
               <div style={{ ...sectionTitle, marginTop: 16 }}>
                 간단한 가게소개
               </div>
@@ -918,8 +927,87 @@ export default function MyOwner() {
         {/* 업체등록 오버레이 */}
         {regOpen && (
           <CompanyWriteOverlay
-            onClose={() => setRegOpen(false)}
-            onDone={() => setRegOpen(false)}
+            initial={editing}
+            onClose={() => {
+              setRegOpen(false);
+              setEditing(null);
+            }}
+            onDone={async (payload) => {
+              try {
+                if (editing?.id) {
+                  const { data: saved } = await updateBusiness(
+                    editing.serverId ?? editing.id,
+                    payload
+                  );
+                  const merged = saved || payload;
+                  setCompanies((prev) =>
+                    prev.map((c) =>
+                      c.id === editing.id
+                        ? {
+                            ...c,
+                            ...merged,
+                            name: c.name || "업체",
+                            meta: `${merged.addr ?? c.addr ?? ""}${
+                              merged.addr || c.addr ? " · " : ""
+                            }${merged.kind ?? c.kind ?? ""}`,
+                          }
+                        : c
+                    )
+                  );
+                } else {
+                  const { data: created } = await addBusiness(payload);
+                  const newItem = created
+                    ? {
+                        id:
+                          created.id ??
+                          created.businessId ??
+                          String(Date.now()),
+                        serverId: created.id ?? created.businessId ?? null,
+                        name:
+                          created.name ??
+                          created.storeName ??
+                          created.businessName ??
+                          "업체",
+                        meta: `${created.address ?? ""}${
+                          created.address ? " · " : ""
+                        }${created.category ?? created.kind ?? ""}`,
+                        kind: created.kind ?? created.category,
+                        phone: created.phone ?? created.contact,
+                        addr: created.address ?? created.addr,
+                        bizno: created.bizno ?? created.businessNumber,
+                        about: created.about ?? created.description,
+                        scope: created.scope,
+                      }
+                    : {
+                        id: String(Date.now()),
+                        serverId: null,
+                        name: "업체",
+                        meta: `${payload.addr ?? ""}${
+                          payload.addr ? " · " : ""
+                        }${payload.kind ?? ""}`,
+                        ...payload,
+                      };
+                  setCompanies((prev) => [newItem, ...prev]);
+                }
+                setRegOpen(false);
+                setEditing(null);
+              } catch (e) {
+                console.error(e);
+                alert("저장에 실패했습니다.");
+              }
+            }}
+            onDelete={
+              editing?.id
+                ? async () => {
+                    try {
+                      await handleDeleteOne(editing);
+                    } finally {
+                      setRegOpen(false);
+                      setEditing(null);
+                    }
+                  }
+                : undefined
+            }
           />
         )}
       </div>
