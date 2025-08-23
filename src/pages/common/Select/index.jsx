@@ -139,7 +139,7 @@ const Select = () => {
           <span className="line2">이용하고 싶으신가요?</span>
         </TitleWrap>
 
-        <Card onClick={() => navigate('/onboarding/student')} aria-label="기획자로 활동 선택">
+        <Card onClick={() => navigate('/student/onboarding')} aria-label="기획자로 활동 선택">
           <IconBox><img src={StudentIcon} alt="기획자 아이콘" /></IconBox>
           <Copy>
             <CardTitle>기획자로 활동</CardTitle>
@@ -149,7 +149,7 @@ const Select = () => {
           </Copy>
         </Card>
 
-        <Card onClick={() => navigate('/onboarding/owner')} aria-label="소상공인으로 이용 선택">
+        <Card onClick={() => navigate('/owner/onboarding')} aria-label="소상공인으로 이용 선택">
           <IconBox><img src={OwnerIcon} alt="소상공인 아이콘" /></IconBox>
           <Copy>
             <CardTitle>소상공인으로 이용</CardTitle>
