@@ -1,3 +1,4 @@
+// src/pages/owner/Heart/index.jsx
 import React from "react";
 import BackIconSrc from "../../../assets/Back.svg";
 import SearchIconSrc from "../../../assets/Search.svg";
@@ -6,6 +7,10 @@ import HeartIconSrc from "../../../assets/Heart.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import { useNavigate } from "react-router-dom";
+
+// 🔗 연동 추가
+import { listHearts } from "../../../api/heart";
+import { useHeart } from "../../../contexts/heartcontext";
 
 const STATUS_H = 59;
 const HEADER_H = 49;
@@ -228,14 +233,14 @@ const heartAbs = {
   cursor: "pointer",
 };
 
-/* ================== 검색 팝업(학생 페이지와 동일 구조) ================== */
+/* ================== 검색 팝업 ================== */
 const searchPopupStyle = {
   position: "absolute",
-  top: STATUS_H + HEADER_H + 6, // 헤더 바로 아래 살짝 간격
+  top: STATUS_H + HEADER_H + 6,
   left: "50%",
   transform: "translateX(-50%)",
   width: 348,
-  height: 44, // FILTER_H와 동일
+  height: 44,
   background: "#FFF",
   border: "none",
   borderRadius: "10px",
@@ -267,9 +272,9 @@ const searchInputStyle = {
 function BizCard({
   title,
   region = "용인시 기흥구",
-  posts = "10건",
+  posts = "0건",
   status = "구직 중",
-  temp = "36.5° C",
+  temp = "36.5°C",
   liked = false,
   onToggleHeart,
   onOpen,
@@ -293,7 +298,7 @@ function BizCard({
         style={heartAbs}
         onClick={(e) => {
           e.stopPropagation(); // 카드 이동 막고 하트만 토글
-          onToggleHeart();
+          onToggleHeart?.();
         }}
       />
     </div>
@@ -304,31 +309,93 @@ function BizCard({
 export default function HeartOwner() {
   const navigate = useNavigate();
 
-  // 샘플 데이터
-  const items = [
-    { id: 1, title: "이대학", status: "구직 중" },
-    { id: 2, title: "서강학", status: "구직 중" },
-    { id: 3, title: "연세학", status: "매칭 중" },
-    { id: 4, title: "한양학", status: "구직 중" },
-  ];
+  // 🔗 찜 타입: 소상공인이 찜한 대상은 '대학생(기획자)'
+  const HEART_TYPE = "planner";
 
-  // 하트 상태
-  const [likes, setLikes] = React.useState(() =>
-    Object.fromEntries(items.map((it) => [it.id, false]))
-  );
-  const toggleLike = (id) => setLikes((prev) => ({ ...prev, [id]: !prev[id] }));
+  // 서버 목록/상태
+  const [items, setItems] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const { toggle } = useHeart();
 
   // 구직 중만 보기 토글
   const [onlyActive, setOnlyActive] = React.useState(true);
 
-  // 검색 팝업 (학생 페이지 방식)
+  // 검색 팝업
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
 
-  // 필터링
+  // 서버 응답 → 카드용 데이터 매핑
+  function mapToCard(x) {
+    const title = x?.title || x?.name || x?.nickname || "이름";
+    const status = x?.status || "구직 중";
+    const region = x?.region || x?.location || "지역";
+    const posts =
+      typeof x?.posts === "number"
+        ? `${x.posts}건`
+        : typeof x?.openings === "number"
+        ? `${x.openings}건`
+        : "0건";
+    const temp =
+      typeof x?.temperature === "number"
+        ? `${x.temperature.toFixed(1)}°C`
+        : x?.temp || "36.5°C";
+
+    return {
+      id: x?.id ?? x?.targetId ?? crypto.randomUUID(),
+      title,
+      status,
+      region,
+      posts,
+      temp,
+    };
+  }
+
+  // 찜 목록 조회
+  async function fetchHearts() {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await listHearts(HEART_TYPE);
+      const arr = Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res)
+        ? res
+        : Array.isArray(res?.content)
+        ? res.content
+        : [];
+      setItems(arr.map(mapToCard));
+    } catch (e) {
+      console.error(e);
+      setError(e.message || "에러");
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 최초 로드
+  React.useEffect(() => {
+    fetchHearts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 하트 토글 → 서버 업데이트 후 화면에서 해당 카드 제거
+  async function onToggleHeart(id) {
+    try {
+      await toggle(HEART_TYPE, id);
+      setItems((prev) => prev.filter((it) => it.id !== id));
+    } catch (e) {
+      // 실패 시 무시(필요시 알림)
+    }
+  }
+
+  // 필터링(구직 중만 보기 + 검색)
   const filtered = (
     onlyActive ? items.filter((it) => it.status === "구직 중") : items
-  ).filter((it) => it.title.toLowerCase().includes(q.trim().toLowerCase()));
+  ).filter((it) =>
+    (it.title || "").toLowerCase().includes(q.trim().toLowerCase())
+  );
 
   return (
     <div style={containerStyle}>
@@ -342,11 +409,11 @@ export default function HeartOwner() {
             navigate("/owner/dash");
           })}
           {Title}
-          {SearchIcon(() => setSearchOpen(true))} {/* ← 팝업 열기 */}
+          {SearchIcon(() => setSearchOpen(true))}
           {HomeIcon(() => navigate("/owner/dash"))}
         </div>
 
-        {/* 🔍 검색 팝업 (학생 Heart와 같은 구조) */}
+        {/* 🔍 검색 팝업 */}
         {searchOpen && (
           <>
             <div style={backdropStyle} onClick={() => setSearchOpen(false)} />
@@ -360,7 +427,7 @@ export default function HeartOwner() {
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchOpen(false);
-                  if (e.key === "Enter") setSearchOpen(false); // 필요시 검색 실행 로직 추가
+                  if (e.key === "Enter") setSearchOpen(false);
                 }}
               />
               <img
@@ -369,13 +436,13 @@ export default function HeartOwner() {
                 width={20}
                 height={20}
                 style={{ marginLeft: 8, cursor: "pointer" }}
-                onClick={() => setSearchOpen(false)} // 필요시 검색 실행 로직 추가
+                onClick={() => setSearchOpen(false)}
               />
             </div>
           </>
         )}
 
-        {/* 중간 영역: 토글만 유지 (기존 레이아웃 최대한 유지) */}
+        {/* 중간 영역: 토글만 유지 */}
         <div style={midAreaStyle}>
           <div style={toggleRowStyle}>
             <div
@@ -400,16 +467,29 @@ export default function HeartOwner() {
 
         {/* 리스트 */}
         <div style={listContainerStyle}>
+          {/* 상태 메시지 */}
+          {loading && (
+            <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
+          )}
+          {error && !loading && (
+            <div style={{ fontSize: 12, color: "#D00" }}>
+              관심목록을 불러오지 못했습니다.
+            </div>
+          )}
+
           {filtered.map((it) => (
             <BizCard
               key={it.id}
               title={it.title}
+              region={it.region}
+              posts={it.posts}
               status={it.status}
-              liked={!!likes[it.id]}
-              onToggleHeart={() => toggleLike(it.id)}
+              temp={it.temp}
+              liked={true} // 찜 목록 화면이므로 기본 true
+              onToggleHeart={() => onToggleHeart(it.id)}
               onOpen={() =>
                 navigate("/owner/Detail", {
-                  state: { name: it.title, status: it.status },
+                  state: { name: it.title, status: it.status, id: it.id },
                 })
               }
             />
