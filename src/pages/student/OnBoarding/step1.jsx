@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
-import {ReactComponent as HeaderLogo} from "../../../images/start/Startlogo.svg";
+import {ReactComponent as HeaderLogo} from "../../../images/Start/Startlogo.svg";
 import {ReactComponent as Person} from "../../../assets/StandingPerson.svg";
 import {ReactComponent as AI} from "../../../assets/Ai.svg";
 
