@@ -1,34 +1,43 @@
 import React, { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { setCookie } from "../../common/Auth/cookie";
 
-const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr";
+const toParams = (s) =>
+  Object.fromEntries(new URLSearchParams((s || "").replace(/^(\?|#)/, "")).entries());
 
 export default function AuthComplete() {
+  const { search, hash } = useLocation();
+  const nav = useNavigate();
+
   useEffect(() => {
-    // (선택) state 검증
-    const url = new URL(window.location.href);
-    const returnedState = url.searchParams.get("state");
-    const storedState = sessionStorage.getItem("oauth_state");
-    if (returnedState && storedState && returnedState !== storedState) {
-      alert("로그인 상태 검증에 실패했습니다. 다시 시도해주세요.");
-      window.location.replace("/login");
-      return;
+    const q = toParams(search);
+    const h = toParams(hash);
+
+    const access =
+      q.access_token || h.access_token || q.token || h.token;
+    const refresh =
+      q.refresh_token || h.refresh_token || q.refresh || h.refresh;
+
+    const needsTypeSelection = q.needsTypeSelection === "true" || h.needsTypeSelection === "true";
+    const userId = q.userId || h.userId;
+
+    if (access && refresh) {
+      setCookie("accessToken", access);
+      setCookie("refreshToken", refresh);
+
+      const next =
+        (needsTypeSelection && "/select") ||
+        sessionStorage.getItem("post_login_redirect") ||
+        "/main";
+
+      if (userId) sessionStorage.setItem("userId", userId);
+
+      nav(next, { replace: true });
+    } else {
+      console.error("리다이렉트에 토큰이 없습니다.", { q, h });
+      nav("/login", { replace: true });
     }
+  }, [search, hash, nav]);
 
-    // 세션/JWT 쿠키가 발급되었다면 /auth/me가 성공해야 함
-    fetch(`${API_BASE}/auth/me`, { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("unauthorized");
-        return res.json();
-      })
-      .then(() => {
-        window.location.replace("/"); // 원하는 경로로 변경 가능
-      })
-      .catch(() => {
-        alert("로그인 처리 중 문제가 발생했습니다.");
-        window.location.replace("/login");
-      });
-  }, []);
-
-  return <div style={{ padding: 24 }}>로그인 처리 중입니다…</div>;
+  return <div style={{ padding: 24, textAlign: "center" }}>로그인 처리중…</div>;
 }
