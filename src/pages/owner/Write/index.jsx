@@ -186,6 +186,53 @@ const ctaBtnStyle = {
   cursor: "pointer",
 };
 
+// [API] 학생 대시보드에 뜨는 '소상공인 구인 글' 등록용
+const API_BASE =
+  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr";
+const BUSINESS_CREATE_PATH = "/dashboard/business";
+
+// 현재 작성 폼 값으로 POST (학생 대시보드가 읽는 구조에 맞춰 필드 매핑)
+async function submitOwnerPosting({
+  title,
+  storeName,
+  category,
+  from,
+  to,
+  status,
+}) {
+  const body = {
+    title: title?.trim?.() || "",
+    school: (storeName || "").trim(), // 학생 대시보드 store 라인 표시에 사용됨
+    category: category || "기타",
+    availableFrom: from || null, // YYYY-MM-DD
+    availableTo: to || null, // YYYY-MM-DD
+    status: status || "모집중",
+  };
+
+  const res = await fetch(`${API_BASE}${BUSINESS_CREATE_PATH}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`등록 실패 (HTTP ${res.status})`);
+  return res.json().catch(() => ({}));
+}
+
+// 문자열 "YYYY.MM.DD ~ YYYY.MM.DD" → { from: "YYYY-MM-DD", to: "YYYY-MM-DD" }
+function extractDatesFromPeriod(periodStr) {
+  if (!periodStr) return { from: null, to: null };
+  // 양쪽 공백 제거 및 구분자 통일
+  const cleaned = String(periodStr).replace(/\s+/g, " ").trim();
+  // 첫 번째 날짜 ~ 두 번째 날짜 패턴 추출
+  const m = cleaned.match(
+    /(\d{4}[.\-\/]\d{2}[.\-\/]\d{2})\s*[~\-–]\s*(\d{4}[.\-\/]\d{2}[.\-\/]\d{2})/
+  );
+  if (!m) return { from: null, to: null };
+  const toISO = (s) => s.replace(/[.\/]/g, "-");
+  return { from: toISO(m[1]), to: toISO(m[2]) };
+}
+
 /* ===== 페이지 ===== */
 export default function WriteOwner() {
   const navigate = useNavigate();
@@ -332,7 +379,26 @@ export default function WriteOwner() {
           <button
             type="button"
             style={ctaBtnStyle}
-            onClick={() => {
+            onClick={async () => {
+              // === [API] 연동: 진행기간(runPeriod)을 기간으로 사용 ===
+              const { from, to } = extractDatesFromPeriod(runPeriod);
+
+              try {
+                await submitOwnerPosting({
+                  title,
+                  storeName: "", // UI에 별도 입력 없음 → 공란 전송(학생쪽은 기본 라벨로 표시)
+                  category: "기타", // UI에 카테고리 입력 없음 → 기본값
+                  from, // YYYY-MM-DD or null
+                  to, // YYYY-MM-DD or null
+                  status: "모집중",
+                });
+              } catch (e) {
+                // 실패해도 기존 이동 로직은 유지하고 싶다면 주석 처리 제거 가능
+                console.error(e);
+                alert("등록 중 오류가 발생했습니다.");
+                return;
+              }
+
               if (DONE_PATH)
                 navigate(DONE_PATH, {
                   state: {
