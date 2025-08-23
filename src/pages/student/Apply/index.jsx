@@ -134,6 +134,7 @@ const FileBtn = styled.button`
   cursor: pointer;
   letter-spacing: -0.2px;
 `;
+
 const FileChip = styled.span`
   padding: 6px 10px;
   border: 1px solid ${C.line};
@@ -171,6 +172,7 @@ const Menu = styled.div`
   overflow: hidden;
   z-index: 20;
 `;
+
 const Item = styled.button`
   width: 100%;
   padding: 12px 14px;

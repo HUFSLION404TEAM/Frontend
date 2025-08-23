@@ -4,36 +4,23 @@ import GoogleIconScr from "../../../assets/Google.svg";
 import KakaoIconScr from "../../../assets/kakao.svg";
 import NaverIconScr from "../../../assets/naver.svg";
 
-const GAP = 15; // 버튼 간 간격(px)
+const GAP = 15;
 const LOGO_COLOR = "#0080FF";
 
-// =========================
-// 환경변수로 서버/엔드포인트 설정
-// =========================
-// 예) Spring Security 기본: /oauth2/authorization/{provider}    (기본값)
-// 예) 팀 커스텀        : /auth/{provider}/start?state={state}&returnTo={returnTo}
-const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr";
-
+const API_BASE = process.env.REACT_APP_API_BASE_URL;
 const OAUTH_PATH_TEMPLATE =
-  process.env.REACT_APP_OAUTH_PATH_TEMPLATE ||
-  "/oauth2/authorization/{provider}"; // ← 기본값(문서 없어도 대부분 이걸로 동작)
+  process.env.REACT_APP_OAUTH_PATH_TEMPLATE || "/oauth2/authorization/{provider}";
 
-// 템플릿 치환 유틸
 function fillTemplate(tpl, kv) {
   return tpl.replace(/\{(\w+)\}/g, (_, k) => encodeURIComponent(kv[k] ?? ""));
 }
 
-// ✅ OAuth 시작
 function startOAuth(provider) {
-  const state = Array.from(crypto.getRandomValues(new Uint32Array(4))).join(
-    "-"
-  );
+  const state = Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-");
   sessionStorage.setItem("oauth_state", state);
+  sessionStorage.setItem("post_login_redirect", "/main");
 
-  // 로그인 완료 후 프론트에서 처리할 경로(커스텀 플로우일 때 사용)
   const returnTo = `${window.location.origin}/auth/complete`;
-
   const url =
     API_BASE +
     fillTemplate(OAUTH_PATH_TEMPLATE, {
@@ -45,14 +32,7 @@ function startOAuth(provider) {
   window.location.href = url;
 }
 
-function SocialButton({
-  icon,
-  label,
-  bg = "#FFF",
-  color = "#000",
-  border = "1px solid #EDE5E5",
-  onClick,
-}) {
+function SocialButton({ icon, label, bg = "#FFF", color = "#000", border = "1px solid #EDE5E5", onClick }) {
   return (
     <button
       type="button"
@@ -66,8 +46,8 @@ function SocialButton({
         width: "100%",
         borderRadius: 15,
         background: bg,
-        color,
-        border,
+        color: color,
+        border: border,
         padding: "15px 73px",
         boxSizing: "border-box",
         cursor: "pointer",
@@ -98,7 +78,7 @@ function SocialButton({
   );
 }
 
-const Login = () => {
+export default function Login() {
   return (
     <div
       style={{
@@ -118,24 +98,35 @@ const Login = () => {
           margin: "0 auto",
         }}
       >
-        {/* 로고 */}
-        <div style={{ display: "grid", placeItems: "center" }}>
-          <Loginlogo style={{ color: LOGO_COLOR, width: 259, height: 126 }} />
+        <div
+          style={{
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <Loginlogo
+            style={{
+              color: LOGO_COLOR,
+              width: 259,
+              height: 126,
+              marginTop: 90,
+            }}
+          />
         </div>
 
-        {/* 서브 카피 */}
         <p
           style={{
-            marginTop: 12,
+            marginTop: 20,
+            marginBottom: 90,
             textAlign: "center",
-            fontSize: 13,
-            color: "#6B7280",
+            fontSize: 15,
+            fontWeight: 600,
+            color: "#5C5C5C;",
           }}
         >
           유니비즈와 함께 시작해보세요!
         </p>
 
-        {/* 소셜 버튼들 */}
         <div
           style={{
             marginTop: 28,
@@ -174,6 +165,5 @@ const Login = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Login;

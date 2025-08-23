@@ -16,6 +16,7 @@ import ReportOwner from "./pages/owner/Report/index";
 import Request from "./pages/owner/Request";
 import DetailOwner from "./pages/owner/Detail";
 import WriteOwner from "./pages/owner/Write";
+import SearchOwnerDetail from "./pages/owner/Search/detail";
 
 import OnboardingStudent from "./pages/student/OnBoarding";
 import DashStudent from "./pages/student/Dash";
@@ -33,6 +34,7 @@ import DetailStudent from "./pages/student/Detail";
 import ChatRoomOwner from "./pages/owner/ChatRoom";
 import ChatRoomStudent from "./pages/student/ChatRoom";
 import { HeartProvider } from "./contexts/heartcontext";
+import SearchStudentDetail from "./pages/student/Search/detail";
 
 // [ADD] 푸터 포함 레이아웃
 import Layout from "./layouts/Layout";
@@ -48,6 +50,7 @@ function App() {
           <Route path="/" element={<Start />} />
           <Route path="/login" element={<Login />} />
           <Route path="/auth/complete" element={<AuthComplete />} />{" "}
+          <Route path="/oauth2/redirect" element={<AuthComplete />} />
           {/* OAuth 완료 */}
           <Route path="/select" element={<Select />} />
           {/* [ADD] Owner 레이아웃 라우트 (푸터 자동 포함) */}
@@ -101,6 +104,7 @@ function App() {
           <Route path="/owner/request" element={<Request />} />
           <Route path="/owner/detail" element={<DetailOwner />} />
           <Route path="/owner/write" element={<WriteOwner />} />
+          <Route path="/owner/search/datail" element={<SearchOwnerDetail/>} />
           {/* Student (대학생) */}
           <Route path="/student/onboarding" element={<OnboardingStudent />} />
           <Route path="/student/dash" element={<DashStudent />} />
@@ -116,6 +120,7 @@ function App() {
           <Route path="/student/report" element={<ReportStudent />} />
           <Route path="/student/apply" element={<Apply />} />
           <Route path="/student/detail" element={<DetailStudent />} />
+          <Route path="/student/search/datail" element={<SearchStudentDetail />} />
         </Routes>
       </BrowserRouter>
     </HeartProvider>
