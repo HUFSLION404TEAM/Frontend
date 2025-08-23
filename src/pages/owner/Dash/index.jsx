@@ -284,6 +284,29 @@ const likeBtnStyle = {
   height: 24,
   cursor: "pointer",
 };
+// ===== 온보딩에서 가게명 로드 =====
+function getOnboardingStoreName() {
+  try {
+    const byKey = (k) => (localStorage.getItem(k) || "").trim();
+    const prof = JSON.parse(localStorage.getItem("onboardingProfile") || "{}");
+    const name =
+      byKey("storeName") || // 가장 흔한 키
+      byKey("businessName") ||
+      byKey("ownerStoreName") ||
+      byKey("onboardingStoreName") ||
+      (prof.storeName || prof.shopName || prof.businessName || "").trim();
+
+    if (name) return name;
+
+    // 쿠키 fallback: storeName=... 으로 저장된 경우
+    const cookie = document.cookie
+      .split("; ")
+      .find((v) => v.startsWith("storeName="))
+      ?.split("=")[1];
+    if (cookie) return decodeURIComponent(cookie);
+  } catch {}
+  return "";
+}
 
 // ===== 카드 컴포넌트 =====
 function CandidateCard({
@@ -298,6 +321,7 @@ function CandidateCard({
 }) {
   const { isHeart, toggle } = useHeart();
   const isLiked = isHeart(type, id);
+  const navigate = useNavigate();
   return (
     <div
       style={cardStyle}
@@ -334,8 +358,10 @@ function CandidateCard({
         style={likeBtnStyle}
         onClick={async (e) => {
           e.stopPropagation();
+          const willAdd = !isLiked;
           try {
             await toggle(type, id);
+            if (willAdd) navigate(FAVORITES_PATH);
           } catch {}
         }}
       />
@@ -346,6 +372,10 @@ function CandidateCard({
 // ===== 메인(소상공인 대시보드) =====
 export default function DashOwner() {
   const navigate = useNavigate();
+  const [storeName, setStoreName] = useState("");
+  useEffect(() => {
+    setStoreName(getOnboardingStoreName());
+  }, []);
 
   // ---- 필터 상태 ----
   const [area, setArea] = useState("우만동 외");
@@ -528,10 +558,10 @@ export default function DashOwner() {
         {/* 로고 밑 텍스트 */}
         <div style={infoBlockStyle}>
           <div style={infoTitleStyle}>
-            BHC 용인외대점을 위한
+            {(storeName || "BHC 용인외대점") + "을 위한"}
             <br />
             대학생 기획자 프로필
-          </div>
+          </div>{" "}
           <div style={infoSubStyle}>
             함께 우리 가게를 알릴 기획자분들을 찾아보세요!
           </div>
