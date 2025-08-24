@@ -1,5 +1,6 @@
 import React, {useState} from 'react'; 
-import {useNavigate} from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 //아이콘
 import BackIcon from "../../../assets/Back.svg";
@@ -281,14 +282,50 @@ const submitButtonStyle = {
 };
 
 
-export default function WriteReviewPage() {
+export default function ReviewOwnerPage() {
   const navigate = useNavigate();
+  const { matchingId } = useParams();
   const [rating, setRating] = useState(0); // 현재 클릭된 별점
   const [hoverRating, setHoverRating] = useState(0); // 마우스가 올라간 별점
   const [reviewText, setReviewText] = useState("");
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  // '제출하기' 버튼을 눌렀을 때 실행될 함수
+  const handleSubmit = async () => {
+    // 유효성 검사: 별점이 0점이거나 리뷰 내용이 비어있으면 제출 방지
+    if (rating === 0) {
+      alert("별점을 매겨주세요.");
+      return;
+    }
+    if (reviewText.trim() === "") {
+      alert("후기 내용을 입력해주세요.");
+      return;
+    }
+
+   // API 명세에 맞게 전송할 데이터 만들기
+    const reviewData = {
+      matchingId: parseInt(matchingId), // URL 파라미터는 문자열이므로 숫자로 변환
+      rating: rating,
+      content: reviewText,
+    };
+
+    try {
+      // axios를 사용해 POST 요청 보내기
+      await axios.post(
+        '/api/review', // 백엔드 API 주소
+        reviewData,    // 전송할 데이터 (body)
+      );
+
+      alert('리뷰가 성공적으로 제출되었습니다!');
+      navigate(-1); // 제출 후 이전 페이지로 돌아가기
+
+    } catch (error) {
+      alert('리뷰 제출 중 오류가 발생했습니다.');
+      console.error(error);
+    }
   };
 
 return (
@@ -370,7 +407,7 @@ return (
         </div>
       </main>
       <section style = {buttonAreaStyle}>
-        <button style = {submitButtonStyle}>제출하기</button>
+        <button style = {submitButtonStyle} onClick={handleSubmit}>제출하기</button>
       </section>
     </div>
   </div>
