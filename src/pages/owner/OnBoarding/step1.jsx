@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OnboardingContext } from './OnboardingContext.jsx';
+//import { OnboardingContext } from './OnboardingContext.jsx';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
 

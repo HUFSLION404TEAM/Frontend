@@ -202,8 +202,7 @@ return (
               </div>
 
               <button 
-                  style = {nextButtonStyle}
-                  onClick={handleNext}>다음
+                  style = {nextButtonStyle}>다음
               </button>
             </main>
         </div>
