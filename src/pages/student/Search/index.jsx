@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
-import { ReactComponent as HeartH } from "../../../assets/Heart.svg";
 import { ReactComponent as Heart } from "../../../assets/Heart2.svg";
 import { ReactComponent as Search } from "../../../assets/SearchB.svg";
 import { ReactComponent as DropDownB } from "../../../assets/downBar.svg";
