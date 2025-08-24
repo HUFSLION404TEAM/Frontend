@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-//import { OnboardingContext } from './OnboardingContext.jsx';
+import { OnboardingContext } from './OnboardingContext';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
 
@@ -193,18 +193,17 @@ const nextButtonStyle = {
 export default function CategoryStep() {
   const navigate = useNavigate();
   const { onboardingData, setOnboardingData } = useContext(OnboardingContext);
-  const [selectedType, setSelectedType] = useState(onboardingData.category || null);
-
-  const handleTypeSelect = (type) => {
-    setSelectedType(type);
-  };
-
+  
+  //현재페이지 한정 상태
+  const [selectedCategory, setSelectedCategory] = useState(onboardingData.category || '');
+  
   // 다음 페이지로 선택된 유형 정보와 함께 이동
   const handleNext = () => {
-    if (selectedType) {
-        setOnboardingData(prevData => ({ ...prevData, category: selectedType }));
-        navigate('./step2');
-    }
+    // 전역 데이터 보관함(Context)에 현재 선택한 값을 저장
+    setOnboardingData(prevData => ({ ...prevData, category: selectedCategory }));
+    
+    // App.js에 정의된 다음 단계의 전체 경로로 이동
+    navigate('/owner/onboarding/name');
   };
 
 return (
