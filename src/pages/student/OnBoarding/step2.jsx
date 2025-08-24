@@ -127,6 +127,31 @@ const inputStyle = {
   lineHeight: "normal",
 };
 
+//다음버튼
+const nextButtonStyle = {
+  display: "flex",
+  width: "220px",
+  padding: "12px 0 13px 0",
+  justifyContent: "center",
+  alignItems: "center",
+  border: 'None',
+  borderRadius: "8px",
+  background: "#1A96FE",
+  boxShadow: "10px 10px 30px 0 rgba(0, 0, 0, 0.12)",
+  
+  color: "#F3F4F6",
+  textAlign: "center",
+  fontFamily: "Pretendard",
+  fontSize: "20px",
+  fontStyle: "normal",
+  fontWeight: 600,
+  lineHeight: "20px", // 100%
+  letterSpacing: "-0.5px",
+
+  marginTop: 0,
+  marginBottom: 0,
+};
+
 
 //페이지 구조
 export default function OnboardingNamePage() {
@@ -175,6 +200,11 @@ return (
                   style={inputStyle}
                 />
               </div>
+
+              <button 
+                  style = {nextButtonStyle}
+                  onClick={handleNext}>다음
+              </button>
             </main>
         </div>
     </div>
