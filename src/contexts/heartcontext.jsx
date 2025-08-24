@@ -31,12 +31,9 @@ export function HeartProvider({ children }) {
               : Array.isArray(res?.content)
               ? res.content
               : [];
-            arr.forEach((x) => {
-              const id = x?.id ?? x?.targetId ?? x?.target?.id;
-              if (id != null) s.add(`${t}:${id}`);
-            });
+            arr.forEach((x) => s.add(`${t}:${x?.id ?? x?.targetId}`));
           } catch {
-            // 타입별 실패는 무시 (로그인 전/권한 문제 등)
+            // 타입별 실패는 무시
           }
         }
         setHeartSet(s);
@@ -51,7 +48,6 @@ export function HeartProvider({ children }) {
       },
       async toggle(type, id) {
         const key = `${type}:${id}`;
-
         // 낙관적 업데이트
         const next = new Set(heartSet);
         let rollback;

@@ -427,8 +427,7 @@ const MyStudent = () => {
   // 서버 목록 새로고침 (응답이 "정상 배열"일 때만 덮어쓰기)
   const refreshPortfolios = async () => {
     try {
-      const res = await getPortfolios();
-      const list = res?.data?.data;
+      const list = await getPortfolios();
       if (Array.isArray(list)) {
         setProjects(
           list.map((p) => ({
@@ -518,7 +517,7 @@ const MyStudent = () => {
               try {
                 if (editing?.id) {
                   // 수정
-                  const { data: saved } = await updatePortfolio(
+                  const saved = await updatePortfolio(
                     editing.serverId ?? editing.id,
                     payload
                   );
@@ -530,7 +529,7 @@ const MyStudent = () => {
                   );
                 } else {
                   // 추가
-                  const { data: created } = await addPortfolio(payload);
+                  const created = await addPortfolio(payload);
                   const newItem = created
                     ? {
                         id:

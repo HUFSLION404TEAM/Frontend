@@ -587,17 +587,15 @@ export default function MyOwner() {
   // 목록 재조회 (정상 배열일 때만 덮어쓰기)
   const refreshBusinesses = async () => {
     try {
-      const res = await getBusinesses();
-      const list = res?.data?.data;
+      const list = await getBusinesses(); // ← 이제 배열을 직접 반환
       if (Array.isArray(list)) {
         setCompanies(
           list.map((b) => ({
             id:
+              b.businessNumber ??
               b.id ??
-              b.businessId ??
-              b.business_id ??
-              String(b.id ?? Date.now()),
-            serverId: b.id ?? b.businessId ?? b.business_id ?? null,
+              String(b.businessNumber ?? b.id ?? Date.now()),
+            serverId: b.businessNumber ?? b.id ?? null, // 요청용 키
             name: b.name ?? b.storeName ?? b.businessName ?? "업체",
             meta: `${b.address ?? b.addr ?? ""}${
               b.address || b.addr ? " · " : ""
@@ -605,7 +603,7 @@ export default function MyOwner() {
             kind: b.kind ?? b.category,
             phone: b.phone ?? b.contact,
             addr: b.address ?? b.addr,
-            bizno: b.bizno ?? b.businessNumber ?? b.registerNumber,
+            bizno: b.businessNumber ?? b.bizno ?? b.registerNumber,
             about: b.about ?? b.description,
             scope:
               b.scope ??
@@ -626,7 +624,7 @@ export default function MyOwner() {
   // 단건 삭제: 낙관적 업데이트 + 안전 재조회
   const handleDeleteOne = async (item) => {
     setCompanies((prev) => prev.filter((c) => c.id !== item.id));
-    const targetId = item?.serverId ?? item?.id;
+    const targetId = item?.serverId ?? item?.bizno ?? item?.id;
     try {
       if (targetId == null) throw new Error("No business id");
       await deleteBusiness(targetId);
@@ -935,10 +933,8 @@ export default function MyOwner() {
             onDone={async (payload) => {
               try {
                 if (editing?.id) {
-                  const { data: saved } = await updateBusiness(
-                    editing.serverId ?? editing.id,
-                    payload
-                  );
+                  const key = editing.serverId ?? editing.bizno ?? editing.id; // ← businessNumber 우선
+                  const saved = await updateBusiness(key, payload);
                   const merged = saved || payload;
                   setCompanies((prev) =>
                     prev.map((c) =>
@@ -955,14 +951,14 @@ export default function MyOwner() {
                     )
                   );
                 } else {
-                  const { data: created } = await addBusiness(payload);
+                  const created = await addBusiness(payload);
                   const newItem = created
                     ? {
                         id:
+                          created.businessNumber ??
                           created.id ??
-                          created.businessId ??
                           String(Date.now()),
-                        serverId: created.id ?? created.businessId ?? null,
+                        serverId: created.businessNumber ?? created.id ?? null,
                         name:
                           created.name ??
                           created.storeName ??
@@ -974,7 +970,10 @@ export default function MyOwner() {
                         kind: created.kind ?? created.category,
                         phone: created.phone ?? created.contact,
                         addr: created.address ?? created.addr,
-                        bizno: created.bizno ?? created.businessNumber,
+                        bizno:
+                          created.businessNumber ??
+                          created.bizno ??
+                          created.registerNumber,
                         about: created.about ?? created.description,
                         scope: created.scope,
                       }
