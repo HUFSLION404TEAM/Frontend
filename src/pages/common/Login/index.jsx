@@ -18,7 +18,7 @@ function fillTemplate(tpl, kv) {
 function startOAuth(provider) {
   const state = Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-");
   sessionStorage.setItem("oauth_state", state);
-  sessionStorage.setItem("post_login_redirect", "/main");
+  sessionStorage.setItem("post_login_redirect", "/select");
 
   const returnTo = `${window.location.origin}/auth/complete`;
   const url =
@@ -166,4 +166,3 @@ export default function Login() {
     </div>
   );
 }
-
