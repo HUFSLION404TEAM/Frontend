@@ -21,7 +21,7 @@ const SIDE_GAP = 10;
 // [API] 백엔드 베이스 URL (없으면 기본 도메인 사용)
 const API_BASE =
   process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr"; // [API]
-const PLANNERS_LIST_PATH = "/dashboard/planners"; // [API] 기획자(대학생) 전체 조회
+const PLANNERS_LIST_PATH = "/dashboard/business"; // [API] 기획자(대학생) 전체 조회
 
 /* ===== 기본 레이아웃 ===== */
 const containerStyle = {
@@ -333,6 +333,28 @@ const checkIcon = (active) => ({
   border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
   background: active ? "#0080FF" : "transparent",
 });
+// ===== 온보딩 이름 로더 (localStorage/쿠키에서 탐색) =====
+function getOnboardingName() {
+  try {
+    const byKey = (k) => (localStorage.getItem(k) || "").trim();
+    // 가장 흔한 키 후보들: 필요시 실제 저장 키로 바꿔 쓰세요.
+    const name =
+      byKey("onboardingName") ||
+      (
+        JSON.parse(localStorage.getItem("onboardingProfile") || "{}").name || ""
+      ).trim() ||
+      byKey("userName") ||
+      byKey("name");
+    if (name) return name;
+    // 쿠키 fallback (name=... 로 저장된 경우)
+    const cookie = document.cookie
+      .split("; ")
+      .find((v) => v.startsWith("name="))
+      ?.split("=")[1];
+    if (cookie) return decodeURIComponent(cookie);
+  } catch {}
+  return "";
+}
 
 /* ===== 카드 컴포넌트 ===== */
 function ShopCard({
@@ -348,6 +370,7 @@ function ShopCard({
 }) {
   const { isHeart, toggle } = useHeart();
   const liked = isHeart(type, id);
+  const navigate = useNavigate();
 
   return (
     <div
@@ -384,8 +407,12 @@ function ShopCard({
         style={likeBtnStyle}
         onClick={async (e) => {
           e.stopPropagation();
+          const willAdd = !liked;
           try {
             await toggle(type, id);
+            if (willAdd) {
+              navigate(FAVORITES_PATH); // ✅ 추가되는 경우에만 찜 페이지로 이동
+            }
           } catch {}
         }}
       />{" "}
@@ -396,7 +423,10 @@ function ShopCard({
 /* ===== 메인 ===== */
 export default function DashStudent() {
   const navigate = useNavigate();
-
+  const [userName, setUserName] = useState("");
+  useEffect(() => {
+    setUserName(getOnboardingName());
+  }, []);
   // 칩 상태
   const [area, setArea] = useState("우만동 외");
   const [price, setPrice] = useState("가격");
@@ -581,10 +611,10 @@ export default function DashStudent() {
         {/* 로고 밑 텍스트 */}
         <div style={infoBlockStyle}>
           <div style={infoTitleStyle}>
-            재서님을 위한
+            {userName ? `${userName}님` : "누구님"}을 위한
             <br />
             소상공인 가게 프로필
-          </div>
+          </div>{" "}
           <div style={infoSubStyle}>
             능력을 함께 펼칠 소상공인분들을 찾아보세요!
           </div>
