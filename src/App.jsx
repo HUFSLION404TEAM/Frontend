@@ -18,6 +18,7 @@ import DetailOwner from "./pages/owner/Detail";
 import WriteOwner from "./pages/owner/Write";
 import SearchOwnerDetail from "./pages/owner/Search/detail";
 
+
 import DashStudent from "./pages/student/Dash";
 import NoticeStudent from "./pages/student/Notice";
 import HeartStudent from "./pages/student/Heart";
@@ -37,10 +38,8 @@ import SearchStudentDetail from "./pages/student/Search/detail";
 
 import Layout from "./layouts/Layout";
 import AuthComplete from "./pages/common/Login/authcomplete";
+import OnboardingStudent from "./pages/student/OnBoarding";
 
-// 온보딩 스텝 페이지
-import StoreTypePage from "./pages/owner/OnBoarding/step1";
-import OnboardingNamePage from "./pages/student/OnBoarding/step2";
 
 function App() {
   return (
@@ -58,7 +57,6 @@ function App() {
           <Route path="/owner" element={<Layout role="owner" />}>
             <Route index element={<DashOwner />} />
             {/* main 변경 반영: 온보딩은 StoreTypePage 사용 */}
-            <Route path="onboarding" element={<StoreTypePage />} />
             <Route path="dash" element={<DashOwner />} />
             <Route path="notice" element={<NoticeOwner />} />
             <Route path="heart" element={<HeartOwner />} />
@@ -77,7 +75,6 @@ function App() {
           {/* Student 레이아웃 (푸터 포함) */}
           <Route path="/student" element={<Layout role="student" />}>
             <Route index element={<DashStudent />} />
-            <Route path="onboarding" element={<OnboardingNamePage />} />
             <Route path="dash" element={<DashStudent />} />
             <Route path="notice" element={<NoticeStudent />} />
             <Route path="heart" element={<HeartStudent />} />
@@ -95,7 +92,6 @@ function App() {
 
           {/* 개별 경로 (중복 이동용) */}
           {/* Owner */}
-          <Route path="/owner/onboarding" element={<StoreTypePage />} />
           <Route path="/owner/dash" element={<DashOwner />} />
           <Route path="/owner/notice" element={<NoticeOwner />} />
           <Route path="/owner/heart" element={<HeartOwner />} />
@@ -110,9 +106,9 @@ function App() {
           <Route path="/owner/detail" element={<DetailOwner />} />
           <Route path="/owner/write" element={<WriteOwner />} />
           <Route path="/owner/search/detail" element={<SearchOwnerDetail />} />
+          <Route path="/owner/onboarding" element={<OnboardingOwner />} />
 
           {/* Student */}
-          <Route path="/student/onboarding" element={<OnboardingNamePage />} />
           <Route path="/student/dash" element={<DashStudent />} />
           <Route path="/student/notice" element={<NoticeStudent />} />
           <Route path="/student/heart" element={<HeartStudent />} />
@@ -127,6 +123,7 @@ function App() {
           <Route path="/student/apply" element={<Apply />} />
           <Route path="/student/detail" element={<DetailStudent />} />
           <Route path="/student/search/detail" element={<SearchStudentDetail />} />
+          <Route path="/student/onboarding" element={<OnboardingStudent />} />
         </Routes>
       </BrowserRouter>
     </HeartProvider>

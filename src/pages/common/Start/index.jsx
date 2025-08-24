@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import styled, { keyframes } from "styled-components";
 import { useNavigate } from "react-router-dom";
-import StartLogo from "../../../images/start/Startlogo.svg";
+import StartLogo from "../../../images/Start/Startlogo.svg";
 
 const fadeIn = keyframes`
   0%   { opacity: 0; transform: translateY(8px) scale(0.96); }

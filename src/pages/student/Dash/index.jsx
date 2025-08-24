@@ -7,6 +7,7 @@ import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import CalendarScr from "../../../assets/Calendar.svg";
 import { useHeart } from "../../../contexts/heartcontext";
+import axiosInstance from "../../common/Auth/axios";
 
 const FAVORITES_PATH = "/student/heart";
 const NOTIFICATIONS_PATH = "/student/notice";
@@ -17,11 +18,6 @@ const HEADER_H = 45;
 const INFO_H = 96;
 const FILTER_H = 44;
 const SIDE_GAP = 10;
-
-// [API] 백엔드 베이스 URL (없으면 기본 도메인 사용)
-const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr"; // [API]
-const PLANNERS_LIST_PATH = "/dashboard/business"; // [API] 기획자(대학생) 전체 조회
 
 /* ===== 기본 레이아웃 ===== */
 const containerStyle = {
@@ -129,16 +125,16 @@ const infoSubStyle = {
   letterSpacing: "-0.2px",
 };
 
-/* ===== 필터 바 (소상공인 페이지 스타일 적용, 글쓰기 버튼 제외) ===== */
+/* ===== 필터 바 ===== */
 const filterBarStyle = {
   position: "absolute",
   top: STATUS_H + HEADER_H + 10 + INFO_H + 35,
   left: 10,
   right: 0,
-  height: FILTER_H - 40, // 소상공인 페이지와 동일
+  height: FILTER_H - 40,
   display: "flex",
   alignItems: "center",
-  justifyContent: "space-between", // 원본 유지 (우측엔 비워둠)
+  justifyContent: "space-between",
   padding: "0 10px",
   background: "#FFF",
   boxSizing: "border-box",
@@ -147,7 +143,7 @@ const filterBarStyle = {
 const filterRowStyle = {
   display: "inline-flex",
   alignItems: "center",
-  gap: 8, // 소상공인 페이지 동일
+  gap: 8,
 };
 const chipStyle = {
   display: "flex",
@@ -168,11 +164,11 @@ const chipLabelStyle = {
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  maxWidth: 35, // 소상공인 페이지 동일
+  maxWidth: 35,
 };
 
-/* ===== 리스트 & 카드 (학생 페이지 원래 레이아웃 유지) ===== */
-const listTop = STATUS_H + HEADER_H + 10 + INFO_H + 12 + FILTER_H + 12; // 기존 값 유지
+/* ===== 리스트 & 카드 ===== */
+const listTop = STATUS_H + HEADER_H + 10 + INFO_H + 12 + FILTER_H + 12;
 const listContainerStyle = {
   position: "absolute",
   top: listTop,
@@ -250,6 +246,8 @@ const statusTextStyle = {
   color: "#0080FF",
   fontSize: 12,
   fontWeight: 600,
+  textDecoration: "underline",
+  textUnderlineOffset: 2,
 };
 const periodRowStyle = {
   display: "flex",
@@ -333,28 +331,6 @@ const checkIcon = (active) => ({
   border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
   background: active ? "#0080FF" : "transparent",
 });
-// ===== 온보딩 이름 로더 (localStorage/쿠키에서 탐색) =====
-function getOnboardingName() {
-  try {
-    const byKey = (k) => (localStorage.getItem(k) || "").trim();
-    // 가장 흔한 키 후보들: 필요시 실제 저장 키로 바꿔 쓰세요.
-    const name =
-      byKey("onboardingName") ||
-      (
-        JSON.parse(localStorage.getItem("onboardingProfile") || "{}").name || ""
-      ).trim() ||
-      byKey("userName") ||
-      byKey("name");
-    if (name) return name;
-    // 쿠키 fallback (name=... 로 저장된 경우)
-    const cookie = document.cookie
-      .split("; ")
-      .find((v) => v.startsWith("name="))
-      ?.split("=")[1];
-    if (cookie) return decodeURIComponent(cookie);
-  } catch {}
-  return "";
-}
 
 /* ===== 카드 컴포넌트 ===== */
 function ShopCard({
@@ -387,7 +363,7 @@ function ShopCard({
     >
       <div style={thumbStyle}>
         <div style={distancePill}>
-          <span>{distance}</span>
+          <span>{distance || "n km 떨어짐"}</span>
         </div>
       </div>
       <div style={infoCol}>
@@ -411,11 +387,11 @@ function ShopCard({
           try {
             await toggle(type, id);
             if (willAdd) {
-              navigate(FAVORITES_PATH); // ✅ 추가되는 경우에만 찜 페이지로 이동
+              navigate(FAVORITES_PATH); // 추가되는 경우에만 찜 페이지로 이동
             }
           } catch {}
         }}
-      />{" "}
+      />
     </div>
   );
 }
@@ -423,11 +399,11 @@ function ShopCard({
 /* ===== 메인 ===== */
 export default function DashStudent() {
   const navigate = useNavigate();
+
+  // 이름: 서버에서 가져오기
   const [userName, setUserName] = useState("");
-  useEffect(() => {
-    setUserName(getOnboardingName());
-  }, []);
-  // 칩 상태
+
+  // 필터 상태
   const [area, setArea] = useState("우만동 외");
   const [price, setPrice] = useState("가격");
   const [category, setCategory] = useState("카테고리");
@@ -445,10 +421,57 @@ export default function DashStudent() {
   const sortRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // [API] 리스트 상태 (기존 더미 배열 대체)
-  const [items, setItems] = useState([]); // [API]
-  const [loading, setLoading] = useState(false); // [API]
-  const [error, setError] = useState(null); // [API]
+  // 목록: 일단 더미 데이터
+  const [items, setItems] = useState([
+    {
+      id: 101,
+      title: "디저트 메뉴 SNS 홍보 구인",
+      status: "모집중",
+      period: "2024.02.14 ~ 2024.03.20",
+      store: "컴포즈커피 용인 외대점",
+      category: "카페",
+      distance: "n km 떨어짐",
+      liked: false,
+    },
+    {
+      id: 102,
+      title: "디저트 메뉴 SNS 홍보 구인",
+      status: "모집중",
+      period: "2024.02.14 ~ 2024.03.20",
+      store: "컴포즈커피 용인 외대점",
+      category: "카페",
+      distance: "n km 떨어짐",
+      liked: false,
+    },
+    {
+      id: 103,
+      title: "디저트 메뉴 SNS 홍보 구인",
+      status: "모집중",
+      period: "2024.02.14 ~ 2024.03.20",
+      store: "컴포즈커피 용인 외대점",
+      category: "카페",
+      distance: "n km 떨어짐",
+      liked: false,
+    },
+  ]);
+
+  // 로딩/에러(지금은 이름만 서버콜)
+  const [loading] = useState(false);
+  const [error] = useState(null);
+
+  // 이름 불러오기
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axiosInstance.get("/api/student/mypage");
+        const name = res?.data?.data?.userInfo?.name || "";
+        setUserName(name);
+      } catch (e) {
+        console.error("학생 정보 조회 실패", e);
+        setUserName(""); // 실패 시 "누구님" 노출
+      }
+    })();
+  }, []);
 
   const openSheet = (section) => {
     setOpenSection(section);
@@ -478,107 +501,6 @@ export default function DashStudent() {
     }, 220);
     return () => clearTimeout(t);
   }, [sheetOpen, openSection]);
-
-  // [API] 필터 → 쿼리스트링 매핑 (백엔드 파라미터명에 맞춰 필요시 수정)
-  function buildFilterQuery() {
-    // 기본값은 필터 미적용
-    const params = new URLSearchParams();
-
-    // 지역 예시 매핑
-    if (area && area !== "우만동 외" && area !== "수원 전체") {
-      params.set("region", area); // 예: ?region=인계동
-    }
-
-    // 가격 레이블 → 구간 예시
-    const priceMap = {
-      "₩0~₩10,000": "0-10000",
-      "₩10,000~₩30,000": "10000-30000",
-      "₩30,000~₩50,000": "30000-50000",
-      "₩50,000+": "50000-",
-    };
-    if (priceMap[price]) params.set("priceRange", priceMap[price]);
-
-    // 카테고리
-    if (category && category !== "카테고리") params.set("category", category);
-
-    // 정렬
-    const sortMap = {
-      "정확도 순": "relevance",
-      "최신 순": "latest",
-      "낮은 가격 순": "priceAsc",
-      "높은 가격 순": "priceDesc",
-    };
-    if (sortMap[sort]) params.set("sort", sortMap[sort]);
-
-    const qs = params.toString();
-    return qs ? `?${qs}` : "";
-  }
-
-  // [API] 서버 응답 → 카드 데이터로 변환 (필드명이 다를 수 있어 안전하게 매핑)
-  function mapPlannerToItem(p) {
-    const period =
-      formatPeriod(p?.availableFrom, p?.availableTo) || p?.period || "-";
-    return {
-      id: p?.id ?? p?.plannerId ?? p?.userId ?? crypto.randomUUID(),
-      title: p?.title ?? p?.name ?? p?.nickname ?? "무제",
-      status: p?.status ?? "모집중",
-      period,
-      store: p?.school ?? p?.major ?? p?.department ?? "기획자",
-      category: p?.category ?? p?.skill ?? "기타",
-      distance: p?.distance ? `${p.distance}km` : "",
-      liked: false,
-    };
-  }
-
-  // [API] 날짜 범위 표시 유틸
-  function formatPeriod(from, to) {
-    if (!from && !to) return "";
-    const f = from ? String(from).slice(0, 10) : "";
-    const t = to ? String(to).slice(0, 10) : "";
-    return f && t ? `${f} - ${t}` : f || t;
-  }
-
-  // [API] 목록 호출
-  async function fetchPlanners() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const qs = buildFilterQuery();
-      const res = await fetch(`${API_BASE}${PLANNERS_LIST_PATH}${qs}`, {
-        credentials: "include", // 쿠키 세션일 때 필요
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-
-      // 감싸진 응답({success,message,data}) 형태도 대비
-      const payload = json?.data ?? json;
-
-      // 페이지네이션 형태(content) 또는 배열 형태 둘 다 처리
-      const list = Array.isArray(payload?.content)
-        ? payload.content
-        : Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.list)
-        ? payload.list
-        : [];
-
-      setItems(list.map(mapPlannerToItem));
-    } catch (e) {
-      console.error(e);
-      setError(e.message || "에러");
-      setItems([]); // 실패 시 빈 목록
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // [API] 처음 로드 + 필터 바뀔 때 자동 조회
-  useEffect(() => {
-    fetchPlanners();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [area, price, category, sort]); // 필터 변경 시 재요청
 
   return (
     <div style={containerStyle}>
@@ -611,16 +533,16 @@ export default function DashStudent() {
         {/* 로고 밑 텍스트 */}
         <div style={infoBlockStyle}>
           <div style={infoTitleStyle}>
-            {userName ? `${userName}님` : "누구님"}을 위한
+            {userName ? `${userName}님을 위한` : "누구님을 위한"}
             <br />
             소상공인 가게 프로필
-          </div>{" "}
+          </div>
           <div style={infoSubStyle}>
             능력을 함께 펼칠 소상공인분들을 찾아보세요!
           </div>
         </div>
 
-        {/* ===== 필터 바 (오너와 동일 스타일) ===== */}
+        {/* 필터 바 */}
         <div style={filterBarStyle}>
           <div style={filterRowStyle}>
             <div style={chipStyle} onClick={() => openSheet("area")}>
@@ -640,13 +562,11 @@ export default function DashStudent() {
               <img src={DownBarSrc} alt="정렬" width={6} height={9} />
             </div>
           </div>
-          {/* 우측은 글쓰기 버튼 자리에 빈 공간 유지 (레이아웃 맞춤) */}
           <div />
         </div>
 
-        {/* 리스트 (학생 기존 레이아웃 유지) */}
+        {/* 리스트 */}
         <div style={listContainerStyle}>
-          {/* [API] 로딩/에러 간단 표기 (UI 변경 없이 텍스트만) */}
           {loading && (
             <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
           )}
@@ -669,23 +589,14 @@ export default function DashStudent() {
               distance={it.distance}
               onOpen={() =>
                 navigate(DETAIL_PATH, {
-                  state: {
-                    id: it.id,
-                    title: it.title,
-                    status: it.status,
-                    period: it.period,
-                    store: it.store,
-                    category: it.category,
-                    distance: it.distance,
-                    liked: it.liked,
-                  },
+                  state: { ...it },
                 })
               }
             />
           ))}
         </div>
 
-        {/* ===== Bottom Sheet (필터) ===== */}
+        {/* Bottom Sheet (필터) */}
         {sheetOpen && (
           <div
             style={sheetOverlayStyle}
@@ -806,7 +717,7 @@ export default function DashStudent() {
             </div>
           </div>
         </div>
-        {/* ===== /Bottom Sheet ===== */}
+        {/* /Bottom Sheet */}
       </div>
     </div>
   );
