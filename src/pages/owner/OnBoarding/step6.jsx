@@ -160,7 +160,7 @@ const nextButtonStyle = {
 
 
 //페이지 구조
-export default function OnboardingNamePage() {
+export default function OnboardingIntroPage() {
   const navigate = useNavigate();
   const location = useLocation();
   

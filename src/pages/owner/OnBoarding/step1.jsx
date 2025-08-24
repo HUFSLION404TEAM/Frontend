@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { OnboardingContext } from './OnboardingContext.jsx';
 
 import {ReactComponent as BackIcon} from "../../../assets/Back2.svg";
 
@@ -189,19 +190,20 @@ const nextButtonStyle = {
 
 
 //페이지 구조
-export default function StoreTypePage() {
+export default function CategoryStep() {
   const navigate = useNavigate();
-  const [selectedType, setSelectedType] = useState(null);
+  const { onboardingData, setOnboardingData } = useContext(OnboardingContext);
+  const [selectedType, setSelectedType] = useState(onboardingData.category || null);
 
   const handleTypeSelect = (type) => {
     setSelectedType(type);
   };
 
+  // 다음 페이지로 선택된 유형 정보와 함께 이동
   const handleNext = () => {
     if (selectedType) {
-        console.log('선택된 가게 유형:', selectedType);
-        // 다음 페이지로 선택된 유형 정보와 함께 이동
-        navigate('/register/next-step', { state: { storeType: selectedType } });
+        setOnboardingData(prevData => ({ ...prevData, category: selectedType }));
+        navigate('./step2');
     }
   };
 
