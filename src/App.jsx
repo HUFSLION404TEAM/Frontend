@@ -3,7 +3,7 @@ import Start from "./pages/common/Start";
 import Login from "./pages/common/Login";
 import Select from "./pages/common/Select";
 
-import OnboardingOwner from "./pages/owner/OnBoarding";            // (남겨둠: 혹시 다른 경로에서 쓸 수도 있음)
+import OnboardingOwner from "./pages/owner/OnBoarding";           
 import DashOwner from "./pages/owner/Dash";
 import NoticeOwner from "./pages/owner/Notice";
 import HeartOwner from "./pages/owner/Heart";
