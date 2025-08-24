@@ -1,16 +1,10 @@
-import axios from "axios";
 // src/api/mypage.js
+import axios from "axios";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr",
-  withCredentials: true, // 쿠키/세션 쓰는 경우 유지
+  withCredentials: true,
 });
-const BASE =
-  process.env.REACT_APP_API_BASE_URL ||
-  (typeof import.meta !== "undefined"
-    ? import.meta.env?.VITE_API_BASE_URL
-    : "") ||
-  "";
 
 function authHeaders() {
   const token =
@@ -21,116 +15,137 @@ function authHeaders() {
   };
 }
 
-function unwrap(json) {
-  // 서버가 {success, data} 래핑을 쓰는 경우/안 쓰는 경우 모두 처리
-  return json?.data ?? json;
+// 공통 언랩
+function unwrap(resp) {
+  // axios 응답: { data: ... } -> 서버가 {data: ...} 래핑하면 한 번 더 벗김
+  const d = resp?.data;
+  return d?.data ?? d ?? null;
 }
 
-/** 온도 조회: GET /mypage/temperature */
-export async function getTemperature() {
-  const res = await fetch(`${BASE}/mypage/temperature`, {
-    method: "GET",
-    headers: authHeaders(),
-    credentials: "include",
-  });
-  const data = unwrap(await res.json());
-  return data?.temperature ?? data?.temp ?? null;
-}
-
-/** (선택) 포트폴리오 목록: GET /mypage/portfolios
- *  명세에 없을 수 있어서 실패해도 조용히 무시하도록 처리
+/** 학생 마이페이지: GET /api/student/mypage
+ *  (여기서 portfolios/temperature 등 포함될 수 있음)
  */
+export async function getStudentMypage() {
+  const resp = await api.get("/api/student/mypage", { headers: authHeaders() });
+  return unwrap(resp);
+}
+
+/** 온도 조회: /api/student/mypage 에서 추출 */
+export async function getTemperature() {
+  const mp = await getStudentMypage();
+  return mp?.temperature ?? mp?.temp ?? null;
+}
+
+/** 포트폴리오 목록: /api/student/mypage.portfolios에서 추출 */
 export async function getPortfolios() {
-  try {
-    const res = await fetch(`${BASE}/mypage/portfolios`, {
-      method: "GET",
-      headers: authHeaders(),
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("no list endpoint");
-    const data = unwrap(await res.json());
-    const arr = Array.isArray(data) ? data : data?.items ?? [];
-    return arr;
-  } catch {
-    return null; // 엔드포인트 없으면 초기 더미 유지
-  }
+  const mp = await getStudentMypage();
+  const list =
+    (Array.isArray(mp?.portfolios) && mp.portfolios) ||
+    (Array.isArray(mp?.data?.portfolios) && mp.data.portfolios) ||
+    [];
+  return list;
 }
 
-/** 포트폴리오 추가: POST /mypage/portfolios */
+/** 포트폴리오 생성: POST /api/portfolio/ */
 export async function addPortfolio(payload) {
-  const res = await fetch(`${BASE}/mypage/portfolios`, {
-    method: "POST",
+  const resp = await api.post("/api/portfolio/", payload, {
     headers: authHeaders(),
-    credentials: "include",
-    body: JSON.stringify(payload),
   });
-  const data = unwrap(await res.json());
-  return data; // 서버가 새 id를 주면 여기서 반환됨
+  return unwrap(resp); // 생성된 포트폴리오 객체(또는 새 id)
 }
 
-/** 포트폴리오 수정: PUT /mypage/portfolios/{id} */
-export async function updatePortfolio(id, payload) {
-  const res = await fetch(`${BASE}/mypage/portfolios/${id}`, {
-    method: "PUT",
-    headers: authHeaders(),
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
-  const data = unwrap(await res.json());
-  return data;
-}
-
-/** 포트폴리오 삭제: DELETE /mypage/portfolios/{id} */
-export async function deletePortfolio(id) {
-  const res = await fetch(`${BASE}/mypage/portfolios/${id}`, {
-    method: "DELETE",
-    headers: authHeaders(),
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error("delete failed");
-}
-
-/** 포트폴리오 공개여부 변경: PUT /mypage/portfolios/{id}/visibility */
-export async function updatePortfolioVisibility(id, visibility) {
-  const res = await fetch(`${BASE}/mypage/portfolios/${id}/visibility`, {
-    method: "PUT",
-    headers: authHeaders(),
-    credentials: "include",
-    body: JSON.stringify({ visibility }), // "PUBLIC" | "PRIVATE"
-  });
-  const data = unwrap(await res.json());
-  return data;
-}
-
+/** 포트폴리오 상세: GET /api/portfolio/{id} */
 export async function getPortfolio(id) {
-  try {
-    const res = await fetch(`${BASE}/mypage/portfolios/${id}`, {
-      method: "GET",
-      headers: authHeaders(),
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("no detail");
-    const data = unwrap(await res.json());
-    return data;
-  } catch {
-    return null;
-  }
+  const resp = await api.get(`/api/portfolio/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
+  });
+  return unwrap(resp);
 }
-// === 소상공인 (마이페이지 - 가게) ===
-// GET /mypage/business (목록이 없다면 백엔드에서 제공되는 조회 엔드포인트로 바꿔주세요)
-export const getBusinesses = () => api.get("/mypage/business");
 
-// POST /mypage/business
-export const addBusiness = (payload) => api.post("/mypage/business", payload);
+/** 포트폴리오 수정: PUT /api/portfolio/{id} */
+export async function updatePortfolio(id, payload) {
+  const resp = await api.put(
+    `/api/portfolio/${encodeURIComponent(id)}`,
+    payload,
+    {
+      headers: authHeaders(),
+    }
+  );
+  return unwrap(resp);
+}
 
-// PUT /mypage/business/{businessId}
-export const updateBusiness = (businessId, payload) =>
-  api.put(`/mypage/business/${businessId}`, payload);
+/** 포트폴리오 삭제: DELETE /api/portfolio/{id} */
+export async function deletePortfolio(id) {
+  await api.delete(`/api/portfolio/${encodeURIComponent(id)}`, {
+    headers: authHeaders(),
+  });
+  return true;
+}
 
-// DELETE /mypage/business/{businessId}
-export const deleteBusiness = (businessId) =>
-  api.delete(`/mypage/business/${businessId}`);
+/** (스웨거에 없음) 공개여부 변경 API는 제거/주석 처리 */
+// export async function updatePortfolioVisibility(id, visibility) { ... }
 
-// PUT /mypage/business/{businessId}/visibility
-export const updateBusinessVisibility = (businessId, payload) =>
-  api.put(`/mypage/business/${businessId}/visibility`, payload);
+/** (스웨거에 없음) 소상공인 마이페이지 API는 제거/주석 처리 */
+// export const getBusinesses = () => api.get("/mypage/business");
+// === 업체(비즈니스) API: /api/store ===
+// 공통: axios 인스턴스(api), authHeaders(), unwrap()는 파일 상단에 이미 존재한다고 가정
+
+// 목록: GET /api/store
+export async function getBusinesses() {
+  const resp = await api.get("/api/store", { headers: authHeaders() });
+  const d = resp?.data?.data ?? resp?.data ?? null;
+  // 배열/페이지 대응
+  return Array.isArray(d) ? d : d?.items || d?.content || [];
+}
+
+// 단건: GET /api/store/{businessNumber}
+export async function getBusiness(businessNumber) {
+  const resp = await api.get(
+    `/api/store/${encodeURIComponent(businessNumber)}`,
+    {
+      headers: authHeaders(),
+    }
+  );
+  return resp?.data?.data ?? resp?.data ?? null;
+}
+
+// 생성: POST /api/store/create
+export async function addBusiness(payload) {
+  const resp = await api.post("/api/store/create", payload, {
+    headers: authHeaders(),
+  });
+  return resp?.data?.data ?? resp?.data ?? null; // 생성된 객체(또는 id)
+}
+
+// 수정: PUT /api/store/{businessNumber}
+export async function updateBusiness(businessNumber, payload) {
+  const resp = await api.put(
+    `/api/store/${encodeURIComponent(businessNumber)}`,
+    payload,
+    { headers: authHeaders() }
+  );
+  return resp?.data?.data ?? resp?.data ?? null;
+}
+
+// 삭제: DELETE /api/store/{businessNumber}
+export async function deleteBusiness(businessNumber) {
+  await api.delete(`/api/store/${encodeURIComponent(businessNumber)}`, {
+    headers: authHeaders(),
+  });
+  return true;
+}
+
+// (옵션) 마이페이지: GET /api/store/mypage
+export async function getBusinessMypage() {
+  const resp = await api.get("/api/store/mypage", { headers: authHeaders() });
+  return resp?.data?.data ?? resp?.data ?? null;
+}
+
+// (옵션) 학생용 프로필: GET /api/store/profile/{businessNumber}
+export async function getStoreProfile(businessNumber) {
+  const resp = await api.get(
+    `/api/store/profile/${encodeURIComponent(businessNumber)}`,
+    { headers: authHeaders() }
+  );
+  return resp?.data?.data ?? resp?.data ?? null;
+}
