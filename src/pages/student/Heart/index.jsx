@@ -311,24 +311,35 @@ export default function HeartStudent() {
   const { toggle } = useHeart();
 
   // [API] 서버 응답 → 카드용 데이터로 매핑
+  // [API] 서버 응답 → 카드용 데이터로 매핑 (storeId/storeName 우선)
   function mapHeartToCard(x) {
+    const id =
+      x?.storeId ?? // ✅ 찜한 가게 ID (학생 입장)
+      x?.targetId ?? // 백엔드가 targetId로 줄 때
+      x?.id ?? // 일반 id
+      null;
+
+    if (!id) return null; // id 없으면 표시/토글 불가 → 건너뛰기
+
     const title =
-      x?.title || x?.name || x?.storeName || x?.nickname || "제목 없음";
+      x?.storeName ?? // ✅ 가게 이름
+      x?.title ??
+      x?.name ??
+      x?.nickname ??
+      "제목 없음";
+
     const subLeft =
-      x?.category || x?.type || x?.field || x?.major || "소상공인";
-    const subRight = x?.status || "모집 중";
+      x?.category ?? x?.type ?? x?.field ?? x?.major ?? "소상공인";
+
+    const subRight = x?.status ?? "모집 중";
     const subtitle = `${subLeft} · ${subRight}`;
+
     const temp =
       typeof x?.temperature === "number"
         ? `${x.temperature.toFixed(0)}°C`
         : x?.temp || x?.updatedAt || "36°C";
 
-    return {
-      id: x?.id ?? x?.targetId ?? crypto.randomUUID(),
-      title,
-      subtitle,
-      temp,
-    };
+    return { id, title, subtitle, temp };
   }
 
   // [API] 목록 조회
@@ -344,7 +355,7 @@ export default function HeartStudent() {
         : Array.isArray(res?.content)
         ? res.content
         : [];
-      setItems(arr.map(mapHeartToCard));
+      setItems(arr.map(mapHeartToCard).filter(Boolean));
     } catch (e) {
       console.error(e);
       setError(e.message || "에러");

@@ -326,29 +326,37 @@ export default function HeartOwner() {
   const [q, setQ] = React.useState("");
 
   // 서버 응답 → 카드용 데이터 매핑
+  // 서버 응답 → 카드 데이터 매핑 (studentId/studentName 우선)
   function mapToCard(x) {
-    const title = x?.title || x?.name || x?.nickname || "이름";
+    const id =
+      x?.studentId ?? // ✅ 학생 ID
+      x?.targetId ?? // 즐겨찾기 대상 id 형태로 줄 때
+      x?.id ?? // 일반 id
+      null;
+
+    if (!id) return null; // id 없으면 표시/토글 불가 → 건너뛰기
+
+    const title =
+      x?.studentName ?? // ✅ 학생 이름
+      x?.name ??
+      x?.nickname ??
+      "이름";
+
     const status = x?.status || "구직 중";
-    const region = x?.region || x?.location || "지역";
+    const region = x?.region || x?.location || x?.school || "지역";
     const posts =
       typeof x?.posts === "number"
         ? `${x.posts}건`
         : typeof x?.openings === "number"
         ? `${x.openings}건`
         : "0건";
+
     const temp =
       typeof x?.temperature === "number"
         ? `${x.temperature.toFixed(1)}°C`
         : x?.temp || "36.5°C";
 
-    return {
-      id: x?.id ?? x?.targetId ?? crypto.randomUUID(),
-      title,
-      status,
-      region,
-      posts,
-      temp,
-    };
+    return { id, title, status, region, posts, temp };
   }
 
   // 찜 목록 조회
@@ -364,7 +372,7 @@ export default function HeartOwner() {
         : Array.isArray(res?.content)
         ? res.content
         : [];
-      setItems(arr.map(mapToCard));
+      setItems(arr.map(mapToCard).filter(Boolean));
     } catch (e) {
       console.error(e);
       setError(e.message || "에러");
