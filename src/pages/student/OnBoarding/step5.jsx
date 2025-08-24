@@ -242,14 +242,14 @@ return (
                   type="email"
                   className = "email-input" 
                   value={email} 
+                  placeholder="이메일"
                   onChange={(e) => setEmail(e.target.value)}
                   style={inputStyle}
                 />
               </div>
 
               <button 
-                  style = {nextButtonStyle}
-                  onClick={handleNext}>다음
+                  style = {nextButtonStyle}>다음
               </button>
             </main>
         </div>
