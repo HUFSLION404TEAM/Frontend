@@ -3,6 +3,7 @@ import Start from "./pages/common/Start";
 import Login from "./pages/common/Login";
 import Select from "./pages/common/Select";
 
+
 import OnboardingOwner from "./pages/owner/OnBoarding";
 import DashOwner from "./pages/owner/Dash";
 import NoticeOwner from "./pages/owner/Notice";
@@ -52,7 +53,7 @@ function App() {
           <Route path="/select" element={<Select />} />
           {/* [ADD] Owner 레이아웃 라우트 (푸터 자동 포함) */}
           <Route path="/owner" element={<Layout role="owner" />}>
-            <Route index element={<DashOwner />} /> {/* /owner → 대시 */}
+            <Route index element={<DashOwner />} /> {/* /owner → 대시 */} 
             <Route path="onboarding" element={<OnboardingOwner />} />
             <Route path="dash" element={<DashOwner />} />
             <Route path="notice" element={<NoticeOwner />} />
