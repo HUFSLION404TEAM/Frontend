@@ -3,8 +3,7 @@ import Start from "./pages/common/Start";
 import Login from "./pages/common/Login";
 import Select from "./pages/common/Select";
 
-
-import OnboardingOwner from "./pages/owner/OnBoarding";
+import OnboardingOwner from "./pages/owner/OnBoarding";            // (남겨둠: 혹시 다른 경로에서 쓸 수도 있음)
 import DashOwner from "./pages/owner/Dash";
 import NoticeOwner from "./pages/owner/Notice";
 import HeartOwner from "./pages/owner/Heart";
@@ -17,8 +16,8 @@ import ReportOwner from "./pages/owner/Report/index";
 import Request from "./pages/owner/Request";
 import DetailOwner from "./pages/owner/Detail";
 import WriteOwner from "./pages/owner/Write";
+import SearchOwnerDetail from "./pages/owner/Search/detail";
 
-import OnboardingStudent from "./pages/student/OnBoarding";
 import DashStudent from "./pages/student/Dash";
 import NoticeStudent from "./pages/student/Notice";
 import HeartStudent from "./pages/student/Heart";
@@ -34,11 +33,14 @@ import DetailStudent from "./pages/student/Detail";
 import ChatRoomOwner from "./pages/owner/ChatRoom";
 import ChatRoomStudent from "./pages/student/ChatRoom";
 import { HeartProvider } from "./contexts/heartcontext";
+import SearchStudentDetail from "./pages/student/Search/detail";
 
-// [ADD] 푸터 포함 레이아웃
 import Layout from "./layouts/Layout";
 import AuthComplete from "./pages/common/Login/authcomplete";
-import { FavoritesProvider } from "./contexts/heartcontext";
+
+// 온보딩 스텝 페이지
+import StoreTypePage from "./pages/owner/OnBoarding/step1";
+import OnboardingNamePage from "./pages/student/OnBoarding/step2";
 
 function App() {
   return (
@@ -48,13 +50,15 @@ function App() {
           {/* 공통 */}
           <Route path="/" element={<Start />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/auth/complete" element={<AuthComplete />} />{" "}
-          {/* OAuth 완료 */}
+          <Route path="/auth/complete" element={<AuthComplete />} />
+          <Route path="/oauth2/redirect" element={<AuthComplete />} />
           <Route path="/select" element={<Select />} />
-          {/* [ADD] Owner 레이아웃 라우트 (푸터 자동 포함) */}
+
+          {/* Owner 레이아웃 (푸터 포함) */}
           <Route path="/owner" element={<Layout role="owner" />}>
-            <Route index element={<DashOwner />} /> {/* /owner → 대시 */} 
-            <Route path="onboarding" element={<OnboardingOwner />} />
+            <Route index element={<DashOwner />} />
+            {/* main 변경 반영: 온보딩은 StoreTypePage 사용 */}
+            <Route path="onboarding" element={<StoreTypePage />} />
             <Route path="dash" element={<DashOwner />} />
             <Route path="notice" element={<NoticeOwner />} />
             <Route path="heart" element={<HeartOwner />} />
@@ -69,10 +73,11 @@ function App() {
             <Route path="detail" element={<DetailOwner />} />
             <Route path="write" element={<WriteOwner />} />
           </Route>
-          {/* [ADD] Student 레이아웃 라우트 (푸터 자동 포함) */}
+
+          {/* Student 레이아웃 (푸터 포함) */}
           <Route path="/student" element={<Layout role="student" />}>
-            <Route index element={<DashStudent />} /> {/* /student → 대시 */}
-            <Route path="onboarding" element={<OnboardingStudent />} />
+            <Route index element={<DashStudent />} />
+            <Route path="onboarding" element={<OnboardingNamePage />} />
             <Route path="dash" element={<DashStudent />} />
             <Route path="notice" element={<NoticeStudent />} />
             <Route path="heart" element={<HeartStudent />} />
@@ -87,8 +92,10 @@ function App() {
             <Route path="apply" element={<Apply />} />
             <Route path="detail" element={<DetailStudent />} />
           </Route>
-          {/* Owner (소상공인) */}
-          <Route path="/owner/onboarding" element={<OnboardingOwner />} />
+
+          {/* 개별 경로 (중복 이동용) */}
+          {/* Owner */}
+          <Route path="/owner/onboarding" element={<StoreTypePage />} />
           <Route path="/owner/dash" element={<DashOwner />} />
           <Route path="/owner/notice" element={<NoticeOwner />} />
           <Route path="/owner/heart" element={<HeartOwner />} />
@@ -102,8 +109,10 @@ function App() {
           <Route path="/owner/request" element={<Request />} />
           <Route path="/owner/detail" element={<DetailOwner />} />
           <Route path="/owner/write" element={<WriteOwner />} />
-          {/* Student (대학생) */}
-          <Route path="/student/onboarding" element={<OnboardingStudent />} />
+          <Route path="/owner/search/detail" element={<SearchOwnerDetail />} />
+
+          {/* Student */}
+          <Route path="/student/onboarding" element={<OnboardingNamePage />} />
           <Route path="/student/dash" element={<DashStudent />} />
           <Route path="/student/notice" element={<NoticeStudent />} />
           <Route path="/student/heart" element={<HeartStudent />} />
@@ -117,6 +126,7 @@ function App() {
           <Route path="/student/report" element={<ReportStudent />} />
           <Route path="/student/apply" element={<Apply />} />
           <Route path="/student/detail" element={<DetailStudent />} />
+          <Route path="/student/search/detail" element={<SearchStudentDetail />} />
         </Routes>
       </BrowserRouter>
     </HeartProvider>

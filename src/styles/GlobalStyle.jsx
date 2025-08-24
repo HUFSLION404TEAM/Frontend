@@ -6,6 +6,7 @@ const GlobalStyle = createGlobalStyle`
     src: url('/fonts/Pretendard-Regular.woff') format('woff');
     font-weight: 400;
     font-style: normal;
+    font-display: swap;
   }
 
   html, body, #root {
@@ -29,6 +30,30 @@ const GlobalStyle = createGlobalStyle`
   body {
     background-color: #fff;
     color: #000;
+  }
+
+
+
+  @media (max-width: 360px) {
+    html { font-size: 15px; }
+  }
+  
+  @media (min-width: 414px) and (max-width: 767px) {
+    html { font-size: 16px; }
+  }
+
+  @media (min-width: 768px) {
+    body { background: #f7f8fa; }
+    #root {
+      display: flex;
+      justify-content: center;
+    }
+
+    #root > * {
+      width: 100%;
+      max-width: 390px;
+      background: #fff;
+    }
   }
 `;
 
