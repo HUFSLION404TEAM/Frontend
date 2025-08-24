@@ -46,8 +46,6 @@ const headerStyle = {
   position: 'relative',
   marginTop: '44px',
   marginBottom: '30px',
-
-  backgroundColor:'yellow',
 };
 
 const backButtonStyle = { 

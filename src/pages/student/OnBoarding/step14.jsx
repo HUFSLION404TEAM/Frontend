@@ -301,7 +301,6 @@ export default function PortfolioAwardsPage() {
     return null;
   }
 
-
 return (
     <div style = {containerStyle}>
         <div style = {frameStyle}>
@@ -322,6 +321,8 @@ return (
                 <h3 style={detailTitleStyle}>Projects</h3>
                 <div style={detailListContainerStyle}>
                   <ul style={detailListStyle}>
+                    {/* 리스트 아이템 사이에 세로줄을 그리기 위한 요소 */}
+                    {/*awards.length > 1 && <div style={itemLineStyle}><Stick/></div>*/}
                     {awards.map(item => (
                       <li key={item.id} style={detailItemStyle}>
                         <div style={itemIconStyle}>
