@@ -1,431 +1,204 @@
-import React, {useState} from 'react'; 
-import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
-//아이콘
-import BackIcon from "../../../assets/Back.svg";
-import PersonProfile from "../../../assets/PersonProfile.svg";
-import WarningIcon from "../../../assets/Warning.svg";
+// --- SVG 아이콘 임포트 ---
+import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
+import { ReactComponent as DefaultPersonIcon } from "../../../assets/PersonProfile.svg";
+import { ReactComponent as WarningIcon } from "../../../assets/Warning.svg";
 import StarEmptyIcon from "../../../assets/EmptyStar.svg";
 import StarFilledIcon from "../../../assets/FillStar.svg";
 
+import axiosInstance from '../../common/Auth/axios';
 
-//기본 레이아웃
+// --- 스타일 객체 ---
 const containerStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  minHeight: '100vh',
-  backgroundColor: "#f0f0f0",
-  fontFamily: "Pretendard, sans-serif",
-  overflow: 'auto',
+  display: 'flex', justifyContent: 'center', alignItems: 'center',
+  minHeight: '100vh', backgroundColor: "#F5F5F5", fontFamily: "Pretendard, sans-serif"
 };
-
 const frameStyle = {
-  width: 390,
-  height: 844,
-  backgroundColor: "#FFFFFF",
-  position: "relative",
-  overflow: "hidden",
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
+  width: 390, height: 844, backgroundColor: "#FFFFFF",
+  position: "relative", display: 'flex', flexDirection: 'column', alignItems: 'center'
 };
-
-const mainContentStyle = {
-  flexDirection: 'column',
-  justifyContent: 'center',
-  alignItems: 'center',
-};
-
-
-//헤더
 const headerStyle = {
-  height: 30,
-  display: 'flex',
-  flexDirection: "row",
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  marginTop: '44px',
+  width: '100%', height: 30, display: 'flex', alignItems: 'center',
+  justifyContent: 'center', position: 'relative', marginTop: '44px', flexShrink: 0,
 };
-
 const backButtonStyle = {
-  background:'none',
-  border: 'none',
-  padding: 0,
-  position: 'absolute',
-  left: '20px'
-}
-
+  background:'none', border: 'none', padding: 0,
+  position: 'absolute', left: '20px', cursor: 'pointer'
+};
 const headerTitleStyle = {
-  color: '#000',
-  fontFamily: 'Pretendard',
-  fontSize: '20px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%', // 28px
-  letterSpacing: '-0.5px',
+  color: '#000', fontFamily: 'Pretendard', fontSize: '20px',
+  fontWeight: 600, lineHeight: '140%', margin: 0,
 };
-
-
-//유저정보
 const userInfoStyle = {
-  display: 'flex',
-  width: '390px',
-  height: '116px',
-  flexDirection: "column",
-  alignItems: 'center',
-  gap: '20px',
-  padding: '31px 0 0 0',
+  display: 'flex', flexDirection: "column", alignItems: 'center',
+  gap: '12px', padding: '30px 0',
 };
-
-const userImageStyle = {
-  width: 50,
-  height: 50,
-};
-
+const userImageStyle = { width: 50, height: 50 };
 const userNameStyle = {
-  color: '#000',
-  textAlign: 'center',
-  fontFamily: 'Pretendard',
-  fontSize: '15px',
-  fontStyle: 'normal',
-  fontWeight: 500,
-  lineHeight: '140%', // 21px
-  letterSpacing: '-0.375px',
-  marginBottom: 0,
-  marginTop:0,
+  color: '#000', textAlign: 'center', fontFamily: 'Pretendard',
+  fontSize: '16px', fontWeight: 500, lineHeight: '140%', margin: 0,
 };
-
-
-//별점
-const rateStyle = {
-  display: 'flex',
-  flexDirection: "column",
-  alignItems: 'center',
-  gap: 8,
-  marginBottom: 0,
-  marginTop:0,
+const rateSectionStyle = {
+  display: 'flex', flexDirection: "column", alignItems: 'center',
+  gap: 8, padding: '10px 0 30px 0',
 };
-
 const rateTitleStyle = {
-  color: '#A69F9F',
-  textAlign: 'center',
-  fontFamily: 'Pretendard',
-  fontSize: '15px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%', // 21px
-  letterSpacing: '-0.375px',
-  marginBottom: 0,
-  marginTop: 0,
+  color: '#555', textAlign: 'center', fontFamily: 'Pretendard',
+  fontSize: '15px', fontWeight: 600, lineHeight: '140%', margin: 0,
 };
-
 const rateQuestionStyle = {
-  color: '#D9D6D6',
-  textAlign: 'center',
-  fontFamily: 'Pretendard',
-  fontSize: '15px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%', // 21px
-  letterSpacing: '-0.375px',
-  marginBottom: 0,
-  marginTop: 0,
+  color: '#A6A6A6', textAlign: 'center', fontFamily: 'Pretendard',
+  fontSize: '14px', fontWeight: 500, lineHeight: '140%', margin: 0,
 };
-
-const starContainerStyle = {
-  display: 'flex',
-  flexDirection: "row",
-  alignItems: 'center',
-  gap: 8,
+const starContainerStyle = { display: 'flex', gap: 8, marginTop: '10px' };
+const starStyle = { width: 30, height: 30, cursor: 'pointer' };
+const reviewSectionStyle = {
+  display: 'flex', width: '100%', boxSizing: 'border-box',
+  flexDirection: 'column', padding: '0 25px',
 };
-
-const starStyle = {
-  width: 30,
-  height: 30,
+const reviewTitleStyle = {
+  color: '#717171', fontFamily: 'Pretendard', fontSize: '15px',
+  fontWeight: 600, lineHeight: '140%', marginLeft: '5px',
+  marginBottom: '15px', marginTop: 0,
 };
-
-
-//후기입력
 const textAreaStyle = {
-  display: 'flex',
-  width: '338px',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-  gap: '10px',
-  padding: '30px 26px 0 26px',
-  marginBottom: 0,
-  marginTop:0,
+  width: '340px', height: '180px', padding: '20px',
+  boxSizing: "border-box", borderRadius: '8px', backgroundColor: '#F8F8F8',
+  border: 'none', resize: 'none', outline: 'none',
+  color: "#000", fontFamily: "Pretendard", fontSize: "15px",
+  fontWeight: 500, lineHeight: "140%",
 };
-
-const textTitleStyle = {
-  color: '#717171',
-  fontFamily: 'Pretendard',
-  fontSize: '15px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%', // 21px
-  letterSpacing: '-0.375px',
-  marginLeft: '8px',
-  marginBottom: 0,
-  marginTop: 0,
-};
-
-const textWriteStyle = {
-  display: 'flex',
-  width: '338px',
-  height: '213px',
-  padding: '20px 25px 172px 25px',
-  marginBottom: 0,
-  marginTop: 0,
-  flexShrink: 0,
-  boxSizing: 'border-box',
-  outline: 'None',
-  border: 'None',
-  borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.40)',
-  boxShadow: '0 4px 10px 0 rgba(0, 0, 0, 0.25)',
-  color: '#A1A1A1',
-  fontFamily: 'Pretendard',
-  fontSize: '15px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%',
-  letterSpacing: '-0.375px',
-};
-
-const textWriteFocusStyle = {
-  outline: 'None',
-  border: 'None',
-  boxShadow: '0 4px 10px 0 rgba(0, 0, 0, 0.25)',
-};
-
-
-//경고
 const noticeAreaStyle = {
-  display: "flex",
-  width: '390px',
-  heith: '154px',
-  alignItems: "flex-start",
-  gap: "5px",
-  flexDirection: 'row',
-  padding: '8px 32px 118px 32px',
-  marginBottom: 0,
-  marginTop:0,
+  display: "flex", alignItems: "center", gap: "5px",
+  marginTop: '10px', padding: '0 25px',
 };
-
-const noticeIconStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 5,
-};
-
-const noticeTextAreaStyle = {
-  display: 'flex',
-  width: '310px',
-  height: '36px',
-  marginTop: 0,
-  marginBottom: 0,
-  boxSizing: 'border-box',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  justifyContent: 'center',
-};
-
 const noticeTextStyle = {
-  color: '#A8A8A8',
-  fontFamily: 'Pretendard',
-  fontSize: '12px',
-  fontStyle: 'normal',
-  fontWeight: 600,
-  lineHeight: '140%', // 16.8px
-  letterSpacing: '-0.3px',
+  color: '#A8A8A8', fontFamily: 'Pretendard', fontSize: '12px',
+  fontWeight: 500, lineHeight: '140%',
 };
-
-
-//제출버튼
 const buttonAreaStyle = {
-  display: 'flex',
-  width: '390px',
-  height: '66px',
-  marginTop: 0,
-  boxSizing : 'border-box',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '0 55px 13px 55px',
-  marginBottom: 0,
-  marginTop:0,
+  position: 'absolute', bottom: 0, display: 'flex',
+  width: '390px', height: '80px', alignItems: 'center', justifyContent: 'center',
 };
-
 const submitButtonStyle = {
-  display: 'flex',
-  width: '280px',
-  height: '53px',
-  padding: '4px 12px',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '8px',
-  flexShrink: 0,
-  borderRadius: '8px',
-  border: '0.4px solid var(--primary-color-600, #0183F0)',
-  background: '#FFF',
-  color: 'var(--primary-color-600, #0183F0)',
-  fontFamily: 'Pretendard',
-  fontSize: '14px',
-  fontStyle: 'normal',
-  fontWeight: 500,
-  lineHeight: '18px',
+  display: 'flex', width: '335px', height: '53px',
+  justifyContent: 'center', alignItems: 'center',
+  borderRadius: '8px', border: 'none', backgroundColor: '#0183F0',
+  color: '#FFF', fontFamily: 'Pretendard', fontSize: '16px',
+  fontWeight: 600, cursor: 'pointer',
+};
+const disabledButtonStyle = {
+  ...submitButtonStyle,
+  backgroundColor: '#D9D9D9', cursor: 'not-allowed',
 };
 
-
-export default function ReviewStudentPage() {
+// --- 컴포넌트 ---
+export default function ReviewPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { matchingId } = useParams();
+
+  // 이전 페이지에서 전달받은 리뷰 대상의 이름
+  const targetName = location.state?.targetName || '리뷰 대상';
+
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
-  const [isTextareaFocused, setIsTextareaFocused] = useState(false);
-  
-  const handleGoBack = () => {
-    navigate(-1);
-  };
+  const [content, setContent] = useState("");
 
-  // '제출하기' 버튼을 눌렀을 때 실행될 함수
+  // [개선] 제출 가능 여부를 상태로 관리
+  const isSubmittable = rating > 0 && content.trim() !== '';
+
   const handleSubmit = async () => {
-    // 유효성 검사: 별점이 0점이거나 리뷰 내용이 비어있으면 제출 방지
-    if (rating === 0) {
-      alert("별점을 매겨주세요.");
-      return;
-    }
-    if (reviewText.trim() === "") {
-      alert("후기 내용을 입력해주세요.");
+    if (!isSubmittable) {
+      alert("별점과 후기 내용을 모두 입력해주세요.");
       return;
     }
 
-    // 로그인 시 저장된 인증 토큰을 가져옴
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      alert('리뷰를 작성하려면 로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
-
-   // API 명세에 맞게 전송할 데이터 만들기
     const reviewData = {
-      matchingId: parseInt(matchingId), 
+      matchingId: parseInt(matchingId),
       rating: rating,
-      content: reviewText,
+      content: content,
     };
 
     try {
-      // axios를 사용해 POST 요청 보내기
-      await axios.post(
-        'https://unibiz.lion.it.kr/api/review', // 백엔드 API 주소
-         reviewData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-
+      // [개선] 중앙 관리되는 axiosInstance 사용
+      await axiosInstance.post('/api/review', reviewData);
       alert('리뷰가 성공적으로 제출되었습니다!');
       navigate(-1); // 제출 후 이전 페이지로 돌아가기
-
     } catch (error) {
-      if (error.response && error.response.status === 401) {
-        alert('인증에 실패했습니다. 다시 로그인해주세요.');
-        navigate('/login');
-      } else {
-        alert('리뷰 제출 중 오류가 발생했습니다.');
-      }
-      console.error("API Error:", error);
+      const errorMessage = error.response?.data?.message || '리뷰 제출 중 오류가 발생했습니다.';
+      alert(errorMessage);
+      console.error("Review submission failed:", error);
     }
   };
 
-return (
-  <div style = {containerStyle}>
-    <div style = {frameStyle}>
-      <header style = {headerStyle}>
-        <button onClick = {handleGoBack} style = {backButtonStyle}>
-          <img
-          src = {BackIcon}
-          alt = '뒤로가기'
-          />
-        </button>
-        <h1 style = {headerTitleStyle}>리뷰쓰기</h1>
-      </header>
+  return (
+    <div style={containerStyle}>
+      <div style={frameStyle}>
+        <header style={headerStyle}>
+          <button onClick={() => navigate(-1)} style={backButtonStyle}>
+            <BackIcon />
+          </button>
+          <h1 style={headerTitleStyle}>리뷰쓰기</h1>
+        </header>
 
-      <main style = {mainContentStyle}>
-        <div style = {userInfoStyle}>
-          <img
-            src = {PersonProfile}
-            alt = "프로필"
-            style = {userImageStyle}
-          />
-          <p style = {userNameStyle}>컴포즈커피 한국외대점</p>
-        </div>
-
-        <section style = {rateStyle}>
-          <h2 style = {rateTitleStyle}>만족도</h2>
-          <p style = {rateQuestionStyle}>결과가 어떠셨나요? 별점을 매겨주세요!</p>
-          <div
-            style = {starContainerStyle}
-            onMouseLeave={() => setHoverRating(0)}>
-            {[1, 2, 3, 4, 5].map((starIndex) => {
-                const isFilled = starIndex <= (hoverRating || rating);
-                  return (
-                    <img
-                      key = {starIndex}
-                      src= {isFilled ? StarFilledIcon : StarEmptyIcon}
-                      alt = {'${starIndex}점'}
-                      style = {starStyle}
-                      onClick={() => setRating(starIndex)}
-                      onMouseEnter={() => setHoverRating(starIndex)}
-                    />
-                  );
-                })} 
-          </div> 
-        </section>
-
-        <section style = {textAreaStyle}>
-          <h2 style = {textTitleStyle}>후기</h2>
-          <textarea
-            style = {
-               isTextareaFocused
-                ? { ...textWriteStyle, ...textWriteFocusStyle }
-                : textWriteStyle
-            }
-            placeholder='진행했던 후기를 남겨주세요.'
-            value = {reviewText}
-            onChange = {(e) => setReviewText(e.target.value)}
-            onFocus={() => setIsTextareaFocused(true)}
-            onBlur={() => setIsTextareaFocused(false)}
-          />
-        </section>
-
-        <div style = {noticeAreaStyle}>
-          <img
-            src = {WarningIcon}
-            alt = "경고" 
-          />
-          <div style =  {noticeTextAreaStyle}>
-            <span style = {noticeTextStyle}>
-              작성해 주시는 후기는 소상공인들에게 큰 힘이 됩니다.
-            </span>
-            <span style = {noticeTextStyle}>
-              고객님들의 격려와 지적에 보다 나은 결과로 보답하겠습니다.
-            </span>
+        <main>
+          <div style={userInfoStyle}>
+            <DefaultPersonIcon style={userImageStyle} />
+            <p style={userNameStyle}>{targetName}</p>
           </div>
+
+          <section style={rateSectionStyle}>
+            <h2 style={rateTitleStyle}>만족도</h2>
+            <p style={rateQuestionStyle}>결과가 어떠셨나요? 별점을 매겨주세요!</p>
+            <div
+              style={starContainerStyle}
+              onMouseLeave={() => setHoverRating(0)}
+            >
+              {[1, 2, 3, 4, 5].map((starIndex) => (
+                <img
+                  key={starIndex}
+                  src={(hoverRating || rating) >= starIndex ? StarFilledIcon : StarEmptyIcon}
+                  alt={`${starIndex}점`}
+                  style={starStyle}
+                  onClick={() => setRating(starIndex)}
+                  onMouseEnter={() => setHoverRating(starIndex)}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section style={reviewSectionStyle}>
+            <h2 style={reviewTitleStyle}>후기</h2>
+            <textarea
+              style={textAreaStyle}
+              placeholder='진행했던 후기를 남겨주세요.'
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+          </section>
+
+          <div style={noticeAreaStyle}>
+            <WarningIcon />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={noticeTextStyle}>작성해 주시는 후기는 소상공인들에게 큰 힘이 됩니다.</span>
+              <span style={noticeTextStyle}>고객님들의 격려와 지적에 보다 나은 결과로 보답하겠습니다.</span>
+            </div>
+          </div>
+        </main>
+
+        <div style={buttonAreaStyle}>
+          <button
+            style={isSubmittable ? submitButtonStyle : disabledButtonStyle}
+            onClick={handleSubmit}
+            disabled={!isSubmittable}
+          >
+            제출하기
+          </button>
         </div>
-      </main>
-      <section style = {buttonAreaStyle}>
-        <button style = {submitButtonStyle} onClick={handleSubmit}>제출하기</button>
-      </section>
+      </div>
     </div>
-  </div>
-);
+  );
 }
