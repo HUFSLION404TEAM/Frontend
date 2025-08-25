@@ -7,14 +7,13 @@ import HeartIconSrc from "../../../assets/Heart.svg";
 import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import { useNavigate } from "react-router-dom";
-// [API]
-import { listHearts } from "../../../api/heart";
+import axiosInstance from "../../common/Auth/axios"; // ✅ axios 인스턴스
 import { useHeart } from "../../../contexts/heartcontext";
 
-const STATUS_H = 59; // StatusBar 높이
-const HEADER_H = 49; // Header 높이
-const HEADER_PAD_L = 20; // 헤더 padding-left
-const FILTER_H = 44; // 필터 줄 높이
+const STATUS_H = 59;
+const HEADER_H = 49;
+const HEADER_PAD_L = 20;
+const FILTER_H = 44;
 
 // ── 기본 레이아웃 ──
 const containerStyle = {
@@ -59,8 +58,6 @@ const topFrameStyle = {
   zIndex: 2,
   display: "block",
 };
-
-// 클릭 핸들러를 매개변수로 받는 함수형 상수들
 const BackIcon = (onclick) => (
   <img
     src={BackIconSrc}
@@ -77,8 +74,6 @@ const BackIcon = (onclick) => (
     onClick={onclick}
   />
 );
-
-// ← 검색 아이콘을 함수형으로 변경 (onClick 받기)
 const SearchIcon = (onclick) => (
   <img
     src={SearchIconSrc}
@@ -95,7 +90,6 @@ const SearchIcon = (onclick) => (
     onClick={onclick}
   />
 );
-
 const HomeIcon = (onclick) => (
   <img
     src={HomeIconSrc}
@@ -112,7 +106,6 @@ const HomeIcon = (onclick) => (
     onClick={onclick}
   />
 );
-
 const Title = (
   <div
     style={{
@@ -161,7 +154,7 @@ const filterFontContainer = {
   gap: "10px",
   borderRadius: "10px",
   border: "1px solid #0080FF",
-  boxShadow: "0 4px 7px 0 rgba(0, 0, 0, 0.1)",
+  boxShadow: "0 4px 7px 0 rgba(0,0,0,0.1)",
   backdropFilter: "blur(7.5px)",
   background: "#FFF",
 };
@@ -200,7 +193,7 @@ const cardStyle = {
     "linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.60) 100%)",
   boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
   boxSizing: "border-box",
-  cursor: "pointer", // ← 카드 전체 클릭 가능
+  cursor: "pointer",
 };
 const cardTitle = {
   color: "#111",
@@ -216,6 +209,14 @@ const cardSub = {
   fontWeight: 500,
   lineHeight: "18px",
 };
+const metaRow = {
+  color: "#767676",
+  fontSize: 12,
+  display: "flex",
+  gap: 8,
+  alignItems: "center",
+};
+const dot = <span style={{ opacity: 0.6 }}>·</span>;
 const tempRow = {
   display: "flex",
   alignItems: "center",
@@ -232,7 +233,7 @@ const heartAbs = {
   height: 24,
 };
 
-// ── 검색 팝업 스타일 ──
+// ── 검색 팝업 ──
 const searchPopupStyle = {
   position: "absolute",
   top: STATUS_H + HEADER_H + 6,
@@ -251,7 +252,6 @@ const searchPopupStyle = {
   zIndex: 4,
   outline: "none",
 };
-
 const backdropStyle = {
   position: "absolute",
   top: 0,
@@ -260,7 +260,6 @@ const backdropStyle = {
   bottom: 0,
   zIndex: 3,
 };
-
 const searchInputStyle = {
   flex: 1,
   height: "100%",
@@ -269,11 +268,20 @@ const searchInputStyle = {
   fontSize: 14,
 };
 
-// ── 카드 컴포넌트 ──
-function FavoriteCard({ title, subtitle, temp, liked, onToggleHeart, onOpen }) {
+/* ========= 카드 ========= */
+function FavoriteCard({
+  title,
+  description,
+  priceText,
+  statusText,
+  timeText,
+  temp,
+  liked,
+  onToggleHeart,
+  onOpen,
+}) {
   return (
     <div style={cardStyle} onClick={onOpen}>
-      {/* 하트: 클릭 시 카드로의 이동을 막고 토글만 */}
       <img
         src={liked ? HeartIconSrc : EmptyHeartSrc}
         alt="좋아요"
@@ -284,7 +292,14 @@ function FavoriteCard({ title, subtitle, temp, liked, onToggleHeart, onOpen }) {
         }}
       />
       <div style={cardTitle}>{title}</div>
-      <div style={cardSub}>{subtitle}</div>
+      {description ? <div style={cardSub}>{description}</div> : null}
+      <div style={metaRow}>
+        {priceText ? <span>{priceText}</span> : null}
+        {priceText ? dot : null}
+        {statusText ? <span>{statusText}</span> : null}
+        {(priceText || statusText) && timeText ? dot : null}
+        {timeText ? <span>{timeText}</span> : null}
+      </div>
       <div style={tempRow}>
         <img src={TemperatureIconSrc} alt="온도" width={12} height={12} />
         <span>{temp}</span>
@@ -293,99 +308,106 @@ function FavoriteCard({ title, subtitle, temp, liked, onToggleHeart, onOpen }) {
   );
 }
 
-// ── 메인 컴포넌트 ──
+/* ========= 도우미 ========= */
+function formatWon(n) {
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "";
+  return "₩" + num.toLocaleString();
+}
+function formatRelative(iso) {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const s = Math.floor((Date.now() - t) / 1000);
+  const d = Math.floor(s / 86400);
+  if (d > 0) return `${d} days ago`;
+  const h = Math.floor(s / 3600);
+  if (h > 0) return `${h} hours ago`;
+  const m = Math.floor(s / 60);
+  if (m > 0) return `${m} minutes ago`;
+  return "just now";
+}
+
+/* ========= 메인 ========= */
 export default function HeartStudent() {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [activeFilter, setActiveFilter] = React.useState("전체");
 
-  // [API] 이 페이지에서 다룰 찜 타입 (학생이 보통 소상공인을 찜한다고 가정)
-  const HEART_TYPE = "business";
+  // ✅ 이 페이지는 "구인글" 즐겨찾기
+  const HEART_TYPE = "recruiting";
+  const { toggle } = useHeart();
 
-  // [API] 서버 목록 상태
-  const [items, setItems] = React.useState([]); // [{id,title,subtitle,temp}]
+  // 서버 상태
+  const [items, setItems] = React.useState([]); // 매핑된 카드 배열
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
-  // [API] 전역 하트 훅
-  const { toggle } = useHeart();
-
-  // [API] 서버 응답 → 카드용 데이터로 매핑
-  // [API] 서버 응답 → 카드용 데이터로 매핑 (storeId/storeName 우선)
-  function mapHeartToCard(x) {
-    const id =
-      x?.storeId ?? // ✅ 찜한 가게 ID (학생 입장)
-      x?.targetId ?? // 백엔드가 targetId로 줄 때
-      x?.id ?? // 일반 id
-      null;
-
-    if (!id) return null; // id 없으면 표시/토글 불가 → 건너뛰기
-
-    const title =
-      x?.storeName ?? // ✅ 가게 이름
-      x?.title ??
-      x?.name ??
-      x?.nickname ??
-      "제목 없음";
-
-    const subLeft =
-      x?.category ?? x?.type ?? x?.field ?? x?.major ?? "소상공인";
-
-    const subRight = x?.status ?? "모집 중";
-    const subtitle = `${subLeft} · ${subRight}`;
-
+  // 서버 응답 → 카드 매핑
+  function mapFavoriteRecruitToCard(row = {}) {
+    const rec = row.recruitingInfo || {};
+    const id = rec.id ?? row.favoriteId ?? String(Date.now() + Math.random());
+    const title = rec.title || "구인 공고";
+    const description = rec.projectOverview || ""; // 두 번째 줄
+    const priceText = Number.isFinite(rec.price)
+      ? `${formatWon(rec.price)} 건당`
+      : "";
+    const statusText = rec.isRecruiting ? "모집 중" : "모집 마감";
+    const timeText = rec.createdAt ? formatRelative(rec.createdAt) : "";
     const temp =
-      typeof x?.temperature === "number"
-        ? `${x.temperature.toFixed(0)}°C`
-        : x?.temp || x?.updatedAt || "36°C";
-
-    return { id, title, subtitle, temp };
+      typeof row?.studentUserInfo?.temperature === "number"
+        ? `${row.studentUserInfo.temperature.toFixed(1)}° C`
+        : "36° C";
+    return {
+      id,
+      title,
+      description,
+      priceText,
+      statusText,
+      timeText,
+      temp,
+      isRecruiting: !!rec.isRecruiting,
+      raw: row,
+    };
   }
 
-  // [API] 목록 조회
-  async function fetchHearts() {
+  // 목록 조회: GET /api/favorites/recruitings
+  async function fetchFavorites() {
     try {
       setLoading(true);
       setError(null);
-      const res = await listHearts(HEART_TYPE);
-      const arr = Array.isArray(res?.items)
-        ? res.items
-        : Array.isArray(res)
-        ? res
-        : Array.isArray(res?.content)
-        ? res.content
-        : [];
-      setItems(arr.map(mapHeartToCard).filter(Boolean));
+      const res = await axiosInstance.get("/api/favorites/recruitings");
+      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setItems(list.map(mapFavoriteRecruitToCard));
     } catch (e) {
-      console.error(e);
-      setError(e.message || "에러");
+      console.error("찜한 구인글 목록 조회 실패", e);
+      setError(e);
       setItems([]);
     } finally {
       setLoading(false);
     }
   }
 
-  // [API] 최초 로드
+  // 최초 로드
   React.useEffect(() => {
-    fetchHearts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchFavorites();
   }, []);
 
-  // [API] 하트 토글 (이 화면에선 보통 '해제' 동작)
+  // 하트 토글(보통 해제): 성공 시 목록에서 제거
   async function onToggleHeart(id) {
     try {
       await toggle(HEART_TYPE, id);
-      // 성공 시 목록에서 제거(낙관적)
       setItems((prev) => prev.filter((it) => it.id !== id));
-    } catch (e) {
-      // 실패 시 아무것도 안 함 (Provider가 롤백)
+    } catch {
+      // 실패 시 Provider에서 알아서 롤백한다면 아무 것도 안 함
     }
   }
 
   const openDetail = (item) =>
-    navigate("/student/Detail", {
-      state: { title: item.title, subtitle: item.subtitle, id: item.id },
-    });
+    navigate("/student/detail", { state: { ...item.raw, __card: item } });
+
+  // 필터 적용 (디자인 유지용 — 실제 API 필터 없음)
+  const filteredItems =
+    activeFilter === "모집 중" ? items.filter((it) => it.isRecruiting) : items;
 
   return (
     <div style={containerStyle}>
@@ -396,11 +418,8 @@ export default function HeartStudent() {
         {/* Header */}
         <div style={topFrameStyle}>
           {BackIcon(() => {
-            if (window.history.length > 1) {
-              navigate("/student/dash");
-            } else {
-              navigate("/common/Start");
-            }
+            if (window.history.length > 1) navigate("/student/dash");
+            else navigate("/common/Start");
           })}
           {Title}
           {SearchIcon(() => setSearchOpen(true))}
@@ -419,9 +438,7 @@ export default function HeartStudent() {
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Escape") setSearchOpen(false);
-                  if (e.key === "Enter") {
-                    setSearchOpen(false);
-                  }
+                  if (e.key === "Enter") setSearchOpen(false);
                 }}
               />
               <img
@@ -472,7 +489,6 @@ export default function HeartStudent() {
 
         {/* List */}
         <div style={listContainerStyle}>
-          {/* 상태 */}
           {loading && (
             <div style={{ fontSize: 12, color: "#767676" }}>불러오는 중…</div>
           )}
@@ -481,18 +497,27 @@ export default function HeartStudent() {
               관심목록을 불러오지 못했습니다.
             </div>
           )}
-
-          {items.map((item) => (
-            <FavoriteCard
-              key={item.id}
-              title={item.title}
-              subtitle={item.subtitle}
-              temp={item.temp}
-              liked={true /* 찜 목록 화면이므로 기본 true */}
-              onToggleHeart={() => onToggleHeart(item.id)} // [API]
-              onOpen={() => openDetail(item)}
-            />
-          ))}
+          {!loading &&
+            !error &&
+            filteredItems.map((item) => (
+              <FavoriteCard
+                key={item.id}
+                title={item.title}
+                description={item.description}
+                priceText={item.priceText}
+                statusText={item.statusText}
+                timeText={item.timeText}
+                temp={item.temp}
+                liked={true}
+                onToggleHeart={() => onToggleHeart(item.id)}
+                onOpen={() => openDetail(item)}
+              />
+            ))}
+          {!loading && !error && filteredItems.length === 0 && (
+            <div style={{ fontSize: 12, color: "#767676" }}>
+              찜한 구인글이 없습니다.
+            </div>
+          )}
         </div>
       </div>
     </div>
