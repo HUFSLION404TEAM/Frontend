@@ -8,9 +8,8 @@ import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import TemperatureIconSrc from "../../../assets/Temperature.svg";
 import { useNavigate } from "react-router-dom";
 
-// 🔗 연동 추가
-import { listHearts } from "../../../api/heart";
 import { useHeart } from "../../../contexts/heartcontext";
+import axiosInstance from "../../common/Auth/axios";
 
 const STATUS_H = 59;
 const HEADER_H = 49;
@@ -309,8 +308,9 @@ function BizCard({
 export default function HeartOwner() {
   const navigate = useNavigate();
 
-  // 🔗 찜 타입: 소상공인이 찜한 대상은 '대학생(기획자)'
-  const HEART_TYPE = "planner";
+  // 🔗 찜 타입: 소상공인이 찜한 대상은 '학생'
+  // 서버가 "student" / "STUDENT" 중 무엇을 요구하는지에 맞춰 조정하세요.
+  const HEART_TYPE = "student";
 
   // 서버 목록/상태
   const [items, setItems] = React.useState([]);
@@ -325,53 +325,36 @@ export default function HeartOwner() {
   const [searchOpen, setSearchOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
 
-  // 서버 응답 → 카드용 데이터 매핑
-  // 서버 응답 → 카드 데이터 매핑 (studentId/studentName 우선)
+  // 서버 응답 → 카드 데이터 매핑 (studentInfo 기준, 학생 "이름" 우선)
   function mapToCard(x) {
-    const id =
-      x?.studentId ?? // ✅ 학생 ID
-      x?.targetId ?? // 즐겨찾기 대상 id 형태로 줄 때
-      x?.id ?? // 일반 id
-      null;
-
-    if (!id) return null; // id 없으면 표시/토글 불가 → 건너뛰기
+    const s = x?.studentInfo;
+    if (!s) return null;
 
     const title =
-      x?.studentName ?? // ✅ 학생 이름
-      x?.name ??
-      x?.nickname ??
+      s.name ??
+      s.nickname ??
+      s.user?.name ??
+      s.studentName ??
+      s.school ??
       "이름";
 
-    const status = x?.status || "구직 중";
-    const region = x?.region || x?.location || x?.school || "지역";
-    const posts =
-      typeof x?.posts === "number"
-        ? `${x.posts}건`
-        : typeof x?.openings === "number"
-        ? `${x.openings}건`
-        : "0건";
-
-    const temp =
-      typeof x?.temperature === "number"
-        ? `${x.temperature.toFixed(1)}°C`
-        : x?.temp || "36.5°C";
-
-    return { id, title, status, region, posts, temp };
+    return {
+      id: s.id,
+      title,
+      status: s.isEmployment ? "구직 중" : "구직 완료",
+      region: s.region || "-",
+      posts: "0건",
+      temp: `${(s.temperature ?? 36.5).toFixed(1)}°C`,
+    };
   }
 
-  // 찜 목록 조회
+  // 찜 목록 조회 (axiosInstance 직접 사용)
   async function fetchHearts() {
     try {
       setLoading(true);
       setError(null);
-      const res = await listHearts(HEART_TYPE);
-      const arr = Array.isArray(res?.items)
-        ? res.items
-        : Array.isArray(res)
-        ? res
-        : Array.isArray(res?.content)
-        ? res.content
-        : [];
+      const res = await axiosInstance.get("/api/favorites/students");
+      const arr = Array.isArray(res?.data?.data) ? res.data.data : [];
       setItems(arr.map(mapToCard).filter(Boolean));
     } catch (e) {
       console.error(e);
@@ -398,7 +381,7 @@ export default function HeartOwner() {
     }
   }
 
-  // 필터링(구직 중만 보기 + 검색)
+  // 필터링(구직 중만 보기 + 검색: 학생 "이름" 기준)
   const filtered = (
     onlyActive ? items.filter((it) => it.status === "구직 중") : items
   ).filter((it) =>
@@ -428,7 +411,7 @@ export default function HeartOwner() {
             <div style={searchPopupStyle}>
               <input
                 type="text"
-                placeholder="이름으로 검색"
+                placeholder="학생 이름으로 검색"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 style={searchInputStyle}
