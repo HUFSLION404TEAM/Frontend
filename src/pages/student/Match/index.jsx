@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
 import { ReactComponent as PersonProfile } from "../../../assets/PersonProfile.svg";
@@ -7,15 +8,6 @@ import {ReactComponent as Loading0} from "../../../assets/Loading25.svg";
 import {ReactComponent as Loading25} from "../../../assets/Loading25.svg";
 import {ReactComponent as Loading100} from "../../../assets/Loading25.svg";
 import { ReactComponent as Loading75 } from "../../../assets/Loading75.svg";
-import { ReactComponent as Alarm2 } from "../../../assets/Alarm2.svg";
-
-// --- Mock Data ---
-const mockMatches = [
-  { id: 1, name: '한국외대 김대학', status: 'pending', subText: '매칭 대기중!' },
-  { id: 2, name: '한국외대 이대학', status: 'in_progress', subText: '프로젝트 진행중!' },
-  { id: 3, name: '한국외대 박대학', status: 'completed' },
-  { id: 4, name: '한국외대 윤대학', status: 'needs_action' },
-];
 
 // --- 스타일 객체 ---
 const containerStyle = { 
@@ -74,9 +66,7 @@ const mainContentStyle = {
   justifyContent: 'center',
   position: 'relative',
   flexDirection: 'column',
-  gap:'25px', 
-
-  backgroundColor: 'orange',
+  gap:'25px',
 };
 
 
@@ -151,6 +141,29 @@ const baseButtonStyle = {
   lineHeight: "18px",
 };
 
+const singleButtonStyle = {
+    display: 'flex',
+    height: '29px',
+    padding: '4px 12px',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+
+    borderRadius: '8px',
+    border: '0.4px solid #0183F0',
+    background: '#FFF',
+
+    color: '#0183F0',
+    fontFamily: 'Pretendard',
+    fontSize: '14px',
+    fontStyle: 'normal',
+    fontWeight: 500,
+    lineHeight: '140%', // 19.6px
+    letterSpacing: '-0.35px',
+};
+
 const buttonGroupStyle = { 
   display: 'flex', 
   gap: '5px', 
@@ -167,28 +180,32 @@ const statusIconContainerStyle = {
   backgroundColor: 'orange',
 };
 
-// --- 단일 MatchItem 컴포넌트 ---
-// 이 컴포넌트가 status 값에 따라 내부 모습을 동적으로 변경합니다.
-const MatchItem = ({ match }) => {
-  
-  // 상태에 따른 액션 영역 (버튼 또는 텍스트) 렌더링 함수
+
+// --- 컴포넌트 ---
+const MatchItem = ({ match, onEnd, onAccept, onReject, onGoToFeedback }) => {
+  // 상태에 따른 액션 렌더링 함수
   const renderActionArea = () => {
     switch (match.status) {
       case 'pending':
+        return <div style={subTextStyle}>{match.subText}</div>;
       case 'in_progress':
-        return <div style={subTextStyle}>{match.subText} <Loading75 /></div>;
+        return (
+          <div style={buttonGroupStyle}>
+            <button style={singleButtonStyle} onClick={() => onEnd(match.id)}>종료하기</button>
+          </div>
+        );
       case 'completed':
         return (
           <div style={buttonGroupStyle}>
-            <button style={baseButtonStyle}>송금하기</button>
-            <button style={baseButtonStyle}>리뷰쓰기</button>
+            <button style={singleButtonStyle} onClick={() => onGoToFeedback(match.id)}>AI 피드백</button>
           </div>
         );
+
       case 'needs_action':
         return (
           <div style={buttonGroupStyle}>
-            <button style={baseButtonStyle}>수락</button>
-            <button style={baseButtonStyle}>거절</button>
+            <button style={baseButtonStyle} onClick={() => onAccept(match.id)}>수락</button>
+            <button style={baseButtonStyle} onClick={() => onReject(match.id)}>거절</button>
           </div>
         );
       default:
@@ -287,7 +304,80 @@ const MatchItem = ({ match }) => {
 // --- 메인 페이지 컴포넌트 ---
 export default function StudentMatchPage() {
   const navigate = useNavigate();
-  const [matches, setMatches] = useState(mockMatches);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMatches = async () => {
+    //로그인 시 저장된 학생아이디와 토큰을 가져옴
+    const studentID = localStorage.getItem('studentID'); 
+    const token = localStorage.getItem('accessToken');
+
+    if (!token || ! studentID) {
+        alert('로그인 정보 또는 학생정보가 없습니다. 다시 로그인해주세요.');
+        navigate('/login');
+        return;
+      }
+    
+    try {
+      // axios.get 요청 시 params 옵션을 사용해 학생아이디를 전달합니다.
+      const response = await axios.get(
+        'https://unibiz.lion.it.kr/api/matching/student',
+        { 
+          params: { studentID },
+          headers: { 'Authorization': `Bearer ${token}` } 
+        }
+      );
+      const transformedData = response.data.data.map(item => ({
+        id: item.id,
+        name: item.studentName,
+        status: mapApiStatusToFrontendStatus(item.status),
+        subText: getSubTextForStatus(item.status),
+      }));
+      setMatches(transformedData);
+    
+    } catch (err) {
+      setError('매칭 현황을 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMatches();
+}, [navigate]);
+  
+  // API 상태값을 UI 상태값으로 변환하는 함수
+  const mapApiStatusToFrontendStatus = (apiStatus) => {
+    const statusMap = {
+      'PENDING': 'pending',
+      'ACCEPTED': 'in_progress',
+      'IN_PROGRESS': 'in_progress',
+      'COMPLETED': 'completed',
+      'OFFERED': 'needs_action',
+      'REJECTED': 'rejected'
+    };
+    return statusMap[apiStatus] || '';
+  };
+
+  // API 상태값에 따른 서브 텍스트를 생성하는 함수
+  const getSubTextForStatus = (apiStatus) => {
+    const subTextMap = {
+      'PENDING': '매칭 대기중!',
+      'ACCEPTED': '프로젝트 진행중!',
+      'IN_PROGRESS': '프로젝트 진행중!',
+      'REJECTED': '매칭이 거절되었습니다.'
+    };
+    return subTextMap[apiStatus] || '';
+  };
+  
+  // 버튼 클릭 핸들러 함수들
+  const handleAccept = (matchId) => alert(`${matchId}번 매칭 수락 (API 연동 필요)`);
+  const handleReject = (matchId) => alert(`${matchId}번 매칭 거절 (API 연동 필요)`);
+  const handleGoToPayment = (matchId) => navigate(`/payment/${matchId}`);
+  const handleGoToReview = (matchId) => navigate(`/review/${matchId}`);
+
 
   return (
     <div style={containerStyle}>

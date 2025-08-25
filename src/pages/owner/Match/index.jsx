@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
 import { ReactComponent as PersonProfile } from "../../../assets/PersonProfile.svg";
@@ -7,15 +8,6 @@ import {ReactComponent as Loading0} from "../../../assets/Loading25.svg";
 import {ReactComponent as Loading25} from "../../../assets/Loading25.svg";
 import {ReactComponent as Loading100} from "../../../assets/Loading25.svg";
 import { ReactComponent as Loading75 } from "../../../assets/Loading75.svg";
-import { ReactComponent as Alarm2 } from "../../../assets/Alarm2.svg";
-
-// --- Mock Data ---
-const mockMatches = [
-  { id: 1, name: '컴포즈커피', status: 'pending', subText: '매칭 대기중!' },
-  { id: 2, name: '베이커리', status: 'in_progress' },
-  { id: 3, name: 'BHC', status: 'completed' },
-  { id: 4, name: 'CU 편의점', status: 'needs_action' },
-];
 
 // --- 스타일 객체 ---
 const containerStyle = { 
@@ -46,8 +38,6 @@ const headerStyle = {
   position: 'relative',
   marginTop: '44px',
   marginBottom: '30px',
-
-  backgroundColor:'yellow',
 };
 
 const backButtonStyle = { 
@@ -76,9 +66,7 @@ const mainContentStyle = {
   justifyContent: 'center',
   position: 'relative',
   flexDirection: 'column',
-  gap:'25px', 
-
-  backgroundColor: 'orange',
+  gap:'25px',
 };
 
 
@@ -153,29 +141,6 @@ const baseButtonStyle = {
   lineHeight: "18px",
 };
 
-const singleButtonStyle = {
-    display: 'flex',
-    height: '29px',
-    padding: '4px 12px',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: '8px',
-    flexShrink: 0,
-    alignSelf: 'stretch',
-
-    borderRadius: '8px',
-    border: '0.4px solid #0183F0',
-    background: '#FFF',
-
-    color: '#0183F0',
-    fontFamily: 'Pretendard',
-    fontSize: '14px',
-    fontStyle: 'normal',
-    fontWeight: 500,
-    lineHeight: '140%', // 19.6px
-    letterSpacing: '-0.35px',
-};
-
 const buttonGroupStyle = { 
   display: 'flex', 
   gap: '5px', 
@@ -188,36 +153,29 @@ const statusIconContainerStyle = {
   justifyContent: 'center', 
   width: '60px', 
   height: '60px',
-  
-  backgroundColor: 'orange',
 };
 
-// --- 단일 MatchItem 컴포넌트 ---
-// 이 컴포넌트가 status 값에 따라 내부 모습을 동적으로 변경합니다.
-const MatchItem = ({ match }) => {
+// --- 컴포넌트 ---
+const MatchItem = ({ match, onAccept, onReject, onGoToReview, onGoToPayment }) => {
   
   // 상태에 따른 액션 영역 (버튼 또는 텍스트) 렌더링 함수
   const renderActionArea = () => {
     switch (match.status) {
       case 'pending':
-        return <div style={subTextStyle}>{match.subText} <Loading75 /></div>;
       case 'in_progress':
-        return (
-          <div style={buttonGroupStyle}>
-            <button style={singleButtonStyle}>종료하기</button>
-          </div>
-        );
+        return <div style={subTextStyle}>{match.subText} <Loading75 /></div>;
       case 'completed':
         return (
           <div style={buttonGroupStyle}>
-            <button style={singleButtonStyle}>AI 피드백</button>
+            <button style={baseButtonStyle} onClick={() => onGoToPayment(match.id)}>송금하기</button>
+            <button style={baseButtonStyle} onClick={() => onGoToReview(match.id)}>리뷰쓰기</button>
           </div>
         );
       case 'needs_action':
         return (
           <div style={buttonGroupStyle}>
-            <button style={baseButtonStyle}>수락</button>
-            <button style={baseButtonStyle}>거절</button>
+            <button style={baseButtonStyle} onClick={() => onAccept(match.id)}>수락</button>
+            <button style={baseButtonStyle} onClick={() => onReject(match.id)}>거절</button>
           </div>
         );
       default:
@@ -314,9 +272,97 @@ const MatchItem = ({ match }) => {
 };
 
 // --- 메인 페이지 컴포넌트 ---
-export default function StudentMatchPage() {
+export default function OwnerMatchPage() {
   const navigate = useNavigate();
-  const [matches, setMatches] = useState(mockMatches);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+  const fetchMatches = async () => {
+
+    try {
+      const response = await axios.get(
+        'https://unibiz.lion.it.kr/api/matching/student',
+      );
+
+      const transformedData = response.data.data.map(item => ({
+        id: item.id,
+        name: item.studentName, // API의 studentName을 name으로 매핑
+        status: mapApiStatusToFrontendStatus(item.status),
+        subText: getSubTextForStatus(item.status),
+      }));
+      setMatches(transformedData);
+
+    } catch (err) {
+      setError('매칭 현황을 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchMatches();
+}, [navigate]);
+
+const mapApiStatusToFrontendStatus = (apiStatus) => {
+  // 백엔드 팀과 실제 API status 값을 확인해야 합니다. (예시)
+  if (apiStatus === 'PENDING') return 'pending';
+  if (apiStatus === 'ACCEPTED' || apiStatus === 'IN_PROGRESS') return 'in_progress';
+  if (apiStatus === 'COMPLETED') return 'completed';
+  if (apiStatus === 'OFFERED') return 'needs_action';
+  return '';
+};
+
+const getSubTextForStatus = (apiStatus) => {
+  if (apiStatus === 'PENDING') return '매칭 대기중!';
+  if (apiStatus === 'ACCEPTED' || apiStatus === 'IN_PROGRESS') return '프로젝트 진행중!';
+  return '';
+};
+
+const handleAccept = async (matchId) => {
+  const token = localStorage.getItem('accessToken');
+  try {
+    // '수락' API를 호출합니다.
+    await axios.post(
+      `https://unibiz.lion.it.kr/api/matching/${matchId}/accept`, 
+      {}, // 보낼 데이터가 없다면 빈 객체
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    
+    alert('매칭을 수락했습니다.');
+    // 수락 후 목록을 새로고침하여 상태 변경을 반영합니다.
+    window.location.reload(); 
+
+  } catch (error) {
+    alert('매칭 수락에 실패했습니다.');
+    console.error(error);
+  }
+};
+
+const handleReject = async (matchId) => {
+  const token = localStorage.getItem('accessToken');
+  try {
+    // '거절' API를 호출합니다.
+    await axios.post(
+      `https://unibiz.lion.it.kr/api/matching/${matchId}/reject`, 
+      {}, // 보낼 데이터가 없다면 빈 객체
+      { headers: { 'Authorization': `Bearer ${token}` } }
+    );
+    
+    alert('매칭을 거절했습니다.');
+    // 거절 후 목록을 새로고침하여 상태 변경을 반영합니다.
+    window.location.reload(); 
+
+  } catch (error) {
+    alert('매칭 거절에 실패했습니다.');
+    console.error(error);
+  }
+};
+
+const handleGoToPayment = (matchId) => navigate(`/payment/${matchId}`);
+const handleGoToReview = (matchId) => navigate(`/review/${matchId}`);
+  
 
   return (
     <div style={containerStyle}>
@@ -328,11 +374,20 @@ export default function StudentMatchPage() {
           <h1 style={headerTitleStyle}>매칭 현황</h1>
         </header>
         <main style={mainContentStyle}>
-          {matches.map(match => (
-            <MatchItem key={match.id} match={match} />
+          {loading && <p>로딩 중...</p>}
+          {error && <p style={{color: 'red'}}>{error}</p>}
+
+          {!loading && !error && matches.map(match => (
+            <MatchItem 
+              key={match.id} 
+              match={match}
+              onAccept={handleAccept}
+              onReject={handleReject}
+              onGoToPayment={handleGoToPayment}
+              onGoToReview={handleGoToReview}
+            />
           ))}
         </main>
-        {/* 하단 네비게이션 바가 위치할 수 있습니다. */}
       </div>
     </div>
   );

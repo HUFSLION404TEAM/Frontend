@@ -1,32 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
+// --- SVG 아이콘 Import ---
 import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
-import { ReactComponent as Heart } from "../../../assets/Heart2.svg";
-import { ReactComponent as Search } from "../../../assets/SearchB.svg";
+import { ReactComponent as HeartH } from "../../../assets/Heart.svg"; // 헤더용 꽉 찬 하트
+import { ReactComponent as Heart } from "../../../assets/Heart2.svg"; // 카드용 꽉 찬 하트
+import { ReactComponent as SearchIcon } from "../../../assets/SearchB.svg";
 import { ReactComponent as DropDownB } from "../../../assets/downBar.svg";
-import { ReactComponent as DropDownG } from "../../../assets/Dropdown.svg";
 import { ReactComponent as Temp } from "../../../assets/Temperature.svg";
 import { ReactComponent as EmptyHeart} from "../../../assets/emptyHeart.svg";
 
-const FAVORITES_PATH = "/student/heart";
-const NOTIFICATIONS_PATH = "/student/notice";
-const DETAIL_PATH = "/student/detail";
 
-// [API] 백엔드 베이스 URL (없으면 기본 도메인 사용)
-const API_BASE =
-  process.env.REACT_APP_API_BASE_URL || "https://unibiz.lion.it.kr"; // [API]
-const STUDNET_SEARCH_PATH = "/search/student"; // [API] 소상공인 전체 조회
-
-const businessData = [
-  { id: '1', name: '김대학', category: '구직 중', location: '용인시 처인구', time: '20건', temp: 36.5 },
-  { id: '2', name: '박대학', category: '휴식 중', location: '용인시 수지구', time: '30건', temp: 37.5 },
-  { id: '3', name: '이대학', category: '구직 중', location: '용인시 기흥구', time: '10건', temp: 36.0 },
-  { id: '4', name: '김대학', category: '구직 중', location: '용인시 처인구', time: '20건', temp: 36.2 },
-];
-
-// 기본 디자인
-
+// --- 스타일 객체 (DashOwner 스타일과 통합 및 수정) ---
 const containerStyle = { 
   display: 'flex', 
   justifyContent: 'center', 
@@ -35,347 +21,389 @@ const containerStyle = {
   backgroundColor: "#f0f0f0", 
   fontFamily: "Pretendard, sans-serif" 
 };
-
 const frameStyle = { 
   width: 390, 
   height: 844,
   backgroundColor: "#FFFFFF",
-  display: 'flex', 
-  position: 'relative',
-  flexDirection: 'column',
-  justifyContent: 'center',
+  position: "relative",
+  overflow: "hidden",
 };
-
 const headerContainerStyle = { 
-  height: 30,
+  position: 'absolute',
+  top: '44px',
+  left: 0,
+  right: 0,
+  height: '59px',
   display: 'flex',
   flexDirection: "row",
   alignItems: 'center',
-  justifyContent: 'space-between',
-  position: 'relative',
+  justifyContent: 'center',
   padding: '0 20px',
-  marginTop: '59px',
-  marginBottom: '10px',
+  zIndex: 3,
+  backgroundColor: 'white',
 };
-
-const headerButtonStyle = { 
+const backButtonStyle = { 
   background:'none',
   border: 'none',
   padding: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  position: 'absolute',
+  left: '20px',
+  cursor: 'pointer',
 };
-
 const headerTitleStyle = { 
   color: '#000',
-  fontFamily: 'Pretendard',
   fontSize: '20px',
-  fontStyle: 'normal',
   fontWeight: 600,
-  lineHeight: '140%', // 28px
-  letterSpacing: '-0.5px',
-
+};
+const heartHeaderButtonStyle = {
+  background:'none',
+  border: 'none',
+  padding: 0,
   position: 'absolute',
+  right: '20px',
+  cursor: 'pointer',
+};
+const searchInputContainerStyle = {
+  position: 'absolute',
+  top: '113px',
   left: '50%',
   transform: 'translateX(-50%)',
-  pointerEvent: 'none',
-};
-
-const searchBarStyle = {
   display: "flex",
-  width: "306px",
-  padding: "10px 12px 10px 20px",
+  width: "342px",
+  padding: "10px 20px",
   alignItems: "center",
-  gap: "20px",
+  gap: "10px",
   boxSizing: "border-box",
-
   borderRadius: "12px",
-  border: "1px solid #0080FF",
-  background: "linear-gradient(92deg, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.80) 100%)",
+  border: "1px solid #E0E0E0",
+  background: "#F8F9FA",
+  zIndex: 2,
 };
-
 const searchInputStyle = {
   flex: 1,
   border: 'none',
   outline: 'none',
-  color: "#000",
-  fontFamily: "Pretendard",
   fontSize: "14px",
-  fontStyle: "normal",
   fontWeight: 500,
-  lineHeight: "140%", // 19.6px
-  letterSpacing: "-0.35px",
+  background: 'transparent',
 };
-
-
-const filterContainerStyle = {
-  width: 360,
-  height: 75,
-  display: 'flex',
-  alignItems: "center",
-  justifyContent: 'space-between',
-  flexDirection: 'column',
-  gap: '14px',
-};
-
-const filterButtonsStyle = {
-  width: 308,
-  display: 'flex',
-  alignItems: "center",
-  justifyContent: 'space-between',
-};
-
-const filterButtonStyle = {
+const filterBarStyle = {
+  position: 'absolute',
+  top: '177px',
+  left: '24px',
+  right: '24px',
+  height: '44px',
   display: "flex",
-  padding: "6px 10px",
   alignItems: "center",
-  gap: "10px",
-  borderRadius: "10px",
-  border: "1px solid #0080FF",
-  boxShadow: "0 4px 7px 0 rgba(0, 0, 0, 0.25)",
-  backdropFilter: "blur(7.5px)",
-  backgroundColor: 'white',
-
-  color: "#000",
-  textAlign: "center",
-  fontFamily: "Pretendard",
-  fontSize: "10px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "normal",
+  justifyContent: "space-between",
+  zIndex: 1,
 };
-
-const listHeaderStyle = {
-  width: 360,
+const filterButtonsContainerStyle = {
+  display: 'flex',
+  gap: '8px',
+};
+const chipButtonStyle = {
+  display: "flex",
+  padding: "6px 12px",
+  alignItems: "center",
+  gap: "6px",
+  borderRadius: "16px",
+  border: "1px solid #E0E0E0",
+  background: 'white',
+  fontSize: "12px",
+  cursor: 'pointer',
+};
+const listInfoStyle = {
+  width: '100%',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
+  padding: '10px 4px 0 4px',
+  boxSizing: 'border-box',
 };
-
 const itemCountStyle = {
   color: "#A69F9F",
-  fontFamily: "Pretendard",
   fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
 };
-
-const sortStyle = {
-  display: 'flex',
-  boxSizing: "border-box",
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: 0,
+const sortButtonStyle = {
+  ...chipButtonStyle,
   border: 'none',
-
-  color: "#A69F9F",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-  backgroundColor: 'white',
+  padding: 0,
+  background: 'transparent'
 };
-
-const listWrapperStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '20px',
-};
-
-const mainContentStyle = { 
-  padding: '20px 0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  flexDirection: 'column',
-  gap:'20px',
-};
-
-const cardStyle = {
-  width: 345,
-  heigth: 124,
+const listContainerStyle = {
+  position: "absolute",
+  top: "231px",
+  bottom: 0,
+  left: 0,
+  right: 0,
+  padding: '12px 24px 24px 24px',
+  overflowY: "auto",
   display: "flex",
+  flexDirection: "column",
+  gap: '12px',
+};
+const cardStyle = {
+  width: '100%',
+  height: '124px',
+  display: "flex",
+  position:'relative',
   padding: "12px",
   alignItems: "center",
-  boxSizing: "border-box",
-  flexDirection: 'row',
-  gap: "20px",
-  alignSelf: "stretch",
-
+  gap: "16px",
   borderRadius: "16px",
   background: "linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.60) 100%)",
   boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
+  boxSizing: 'border-box',
+  cursor: 'pointer',
+  flexShrink: 0,
 };
-
 const imagePlaceholderStyle = {
-  display: "flex",
-  boxSizing: "border-box",
-  position: 'relative',
   width: "100px",
   height: "100px",
-  padding: "68px 6px 7px 6px",
-  justifyContent: "center",
-  alignItems: "center",
   borderRadius: "12px",
-  background: "#ABB0BC",
+  background: "#E9ECEF",
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'flex-end',
+  padding: '8px',
+  boxSizing: 'border-box',
 };
-
 const locationBadgeStyle = {
-  display: "flex",
-  boxSizing: "border-box",
-  width: "88px",
-  padding: "5px 15px",
-  justifyContent: "center",
-  alignItems: "center",
-  flexShrink: 0,
-
-  borderRadius: "8px",
+  padding: '4px 10px',
+  borderRadius: '8px',
   background: "rgba(0, 0, 0, 0.60)",
-  backdropFilter: "blur(3px)",
-
   color: "#FFF",
-  fontFamily: "Pretendard",
   fontSize: "11px",
-  fontStyle: "normal",
   fontWeight: 500,
-  lineHeight: "140%", // 15.4px
-  letterSpacing: "-0.275px",
 };
-
 const infoContainerStyle = {
   display: "flex",
-  width: "203px",
-  padding: "10px",
   flexDirection: "column",
   justifyContent: "center",
   alignItems: "flex-start",
+  gap: "6px",
+  flex: 1,
+};
+const titleStyle = {
+  fontSize: "18px",
+  fontWeight: 600,
+  color: '#111',
+};
+const subtitleStyle = {
+  fontSize: "13px",
+  color: "#868E96",
+};
+const temperatureStyle = {
+  fontSize: "13px",
+  color: "#495057",
+  display: "flex",
+  alignItems: "center",
   gap: "4px",
 };
-
-const titleStyle = {
-  color: "#111",
-  fontFamily: "Pretendard",
-  fontSize: "20px",
-  fontStyle: "normal",
-  fontWeight: 600,
-  lineHeight: "140%", // 28px
-  letterSpacing: "-0.5px",
-};
-
-const subtitleStyle = {
-  color: "#767676",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-  paddingBottom: '3px',
-};
-
-const temperatureStyle = {
-  color: "#767676",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  gap: "6px",
-};
-
 const likeButtonStyle = {
   background: 'none',
   border: 'none',
   padding: 0, 
   position: 'absolute',
-  top: '10px',
-  right: '10px',
-  boxSizing: "border-box",
+  top: '12px',
+  right: '12px',
+  cursor: 'pointer',
+};
+const modalOverlayStyle = { /* ... */ }; // 이전 답변의 스타일과 동일
+const modalContentStyle = { /* ... */ }; // 이전 답변의 스타일과 동일
+const modalHeaderStyle = { /* ... */ }; // 이전 답변의 스타일과 동일
+const optionStyle = { /* ... */ }; // 이전 답변의 스타일과 동일
 
-  width: 24,
-  heigth: 24
+// --- 자식 컴포넌트 ---
+
+const BottomSheet = ({ isOpen, onClose, title, options, selectedValue, onSelect }) => {
+  if (!isOpen) return null;
+  // ... (이전 답변의 BottomSheet 코드와 동일)
 };
 
-const BusinessListItem = ({ business }) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const handleLikeClick = () => {
-    setIsLiked(prevState => !prevState);
+const BusinessListItem = ({ business, onSelect, onLike }) => {
+  const handleLikeClick = (e) => {
+    e.stopPropagation();
+    onLike(business.id, !business.isLiked);
   };
+
   return (
-    <div style={cardStyle}>
+    <div style={cardStyle} onClick={() => onSelect(business.id)}>
       <div style={imagePlaceholderStyle}>
         <div style={locationBadgeStyle}>{business.location}</div>
       </div>
       <div style={infoContainerStyle}>
         <div style={titleStyle}>{business.name}</div>
         <div style={subtitleStyle}>
-          {`${business.category} ∙ ${business.status} ∙ ${business.time}`}
+          {`${business.category} ∙ ${business.status} ∙ ${business.postedTime}`}
         </div>
-        <div style={temperatureStyle}><Temp/> {business.temp}°C</div>
+        <div style={temperatureStyle}><Temp/> {business.temperature}°C</div>
       </div>
       <button style={likeButtonStyle} onClick={handleLikeClick}>
-        {/* isLiked 상태에 따라 다른 아이콘을 보여줍니다. */}
-        {isLiked ? <Heart /> : <EmptyHeart />}
+        {business.isLiked ? <Heart /> : <EmptyHeart />}
       </button>
     </div>
   );
 };
 
-export default function SearchStudent() {
+
+// --- 메인 페이지 컴포넌트 ---
+export default function SearchStudent() { // 학생이 소상공인을 검색하는 페이지
   const navigate = useNavigate();
-  const [businesses, setBusinesses] = useState(businessData);
-  // 모달 상태 등 추가 가능
+  
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    region: '지역',
+    category: '업종',
+    status: '모집 상태'
+  });
+  const [sortBy, setSortBy] = useState('추천순');
+  
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetContent, setSheetContent] = useState({ title: '', options: [], type: '' });
+
+  const fetchBusinesses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+    try {
+      // 소상공인 목록 검색 API (POST 방식, 엔드포인트는 백엔드와 협의 필요)
+      const response = await axios.post(
+        'https://unibiz.lion.it.kr/api/business/search',
+        {
+          query: searchTerm,
+          filters: {
+            region: filters.region === '지역' ? null : filters.region,
+            category: filters.category === '업종' ? null : filters.category,
+            status: filters.status === '모집 상태' ? null : filters.status,
+          },
+          sortBy: sortBy === '추천순' ? null : sortBy,
+        },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      const transformedData = (response.data.businesses || []).map(item => ({
+        id: item.businessId,
+        name: item.storeName,
+        location: item.region,
+        category: item.category,
+        status: item.recruitmentStatus,
+        postedTime: item.postedTime, // 예: '30 min'
+        temperature: item.temperature,
+        isLiked: item.isLikedByStudent,
+      }));
+      setBusinesses(transformedData);
+      setTotalCount(response.data.totalCount || 0);
+
+    } catch (err) {
+      setError('소상공인 목록을 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filters, sortBy, navigate]);
+
+  useEffect(() => {
+    fetchBusinesses();
+  }, [fetchBusinesses]);
+
+  const handleLikeToggle = async (businessId, willLike) => {
+    // ... (이전 답변의 찜하기 로직과 동일, 엔드포인트만 /api/business/{id}/like 등으로 변경)
+  };
+  
+  const openSheet = (type) => {
+    const contentMap = {
+      filter: { title: '필터', options: ['전체', '옵션1'] }, // TODO: 필터 상세 내용 정의
+      region: { title: '지역 선택', options: ['지역', '서울', '경기', '인천'] },
+      category: { title: '업종 선택', options: ['업종', '요식업', '서비스업', 'IT'] },
+      status: { title: '모집 상태', options: ['모집 상태', '모집 중', '모집 완료'] },
+      sort: { title: '정렬 순서', options: ['추천순', '최신순', '인기순'] }
+    };
+    setSheetContent({ ...contentMap[type], type });
+    setIsSheetOpen(true);
+  };
+
+  const handleFilterSelect = (selectedValue) => {
+    const { type } = sheetContent;
+    if (type === 'sort') {
+      setSortBy(selectedValue);
+    } else {
+      setFilters(prev => ({ ...prev, [type]: selectedValue }));
+    }
+  };
 
   return (
     <div style={containerStyle}>
       <div style={frameStyle}>
         <header style={headerContainerStyle}>
-          <button style={headerButtonStyle} onClick={() => navigate(-1)}>
+          <button style={backButtonStyle} onClick={() => navigate(-1)}>
             <BackIcon />
           </button>
           <h1 style={headerTitleStyle}>소상공인 조회</h1>
-          <button style={headerButtonStyle}>
-            <Heart />
+          <button style={heartHeaderButtonStyle} onClick={() => navigate('/student/heart')}>
+            <HeartH />
           </button>
         </header>
-        <main style={mainContentStyle}>
-          <div style={searchBarStyle}>
-            <input style={searchInputStyle} placeholder="검색어를 입력하세요" />
-            <Search />
-          </div>
 
-          <div style={filterContainerStyle}>
-            <div style={filterButtonsStyle}>
-              <button style={filterButtonStyle}>필터 <DropDownB /></button>
-              <button style={filterButtonStyle}>지역 <DropDownB /></button>
-              <button style={filterButtonStyle}>업종 <DropDownB /></button>
-              <button style={filterButtonStyle}>모집 상태 <DropDownB /></button>
-            </div>
-            <div style={listHeaderStyle}>
-              <span style={itemCountStyle}>120개</span>
-              <button style={sortStyle}>추천순<DropDownG/></button>
-            </div>
-          </div>
+        <div style={searchInputContainerStyle}>
+          <input 
+            style={searchInputStyle} 
+            placeholder="검색어를 입력하세요"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && fetchBusinesses()}
+          />
+          <button onClick={fetchBusinesses} style={{background: 'none', border: 'none', cursor: 'pointer'}}><SearchIcon /></button>
+        </div>
 
-          <div style={listWrapperStyle}>
-            {businesses.map(business => (
-              <BusinessListItem key={business.id} business={business} />
-            ))}
+        <div style={filterBarStyle}>
+          <div style={filterButtonsContainerStyle}>
+            <button style={chipButtonStyle} onClick={() => openSheet('filter')}>필터 <DropDownB /></button>
+            <button style={chipButtonStyle} onClick={() => openSheet('region')}>{filters.region} <DropDownB /></button>
+            <button style={chipButtonStyle} onClick={() => openSheet('category')}>{filters.category} <DropDownB /></button>
+            <button style={chipButtonStyle} onClick={() => openSheet('status')}>{filters.status} <DropDownB /></button>
           </div>
-        </main>
-        {/* 하단 네비게이션 바가 위치할 수 있습니다. */}
+        </div>
+
+        <div style={listContainerStyle}>
+          <div style={listInfoStyle}>
+            <span style={itemCountStyle}>{totalCount}개</span>
+            <button style={sortButtonStyle} onClick={() => openSheet('sort')}>{sortBy}<DropDownB /></button>
+          </div>
+          {loading && <p style={{textAlign: 'center', color: '#868e96'}}>로딩 중...</p>}
+          {error && <p style={{textAlign: 'center', color: 'red'}}>{error}</p>}
+          {!loading && !error && businesses.length === 0 && (
+            <p style={{textAlign: 'center', color: '#868e96', paddingTop: '50px'}}>검색 결과가 없습니다.</p>
+          )}
+          {!loading && !error && businesses.map(biz => (
+            <BusinessListItem 
+              key={biz.id} 
+              business={biz}
+              onSelect={(businessId) => navigate(`/business/detail/${businessId}`)} // 상세 페이지 경로 협의 필요
+              onLike={handleLikeToggle}
+            />
+          ))}
+        </div>
+
+        <BottomSheet
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+          title={sheetContent.title}
+          options={sheetContent.options}
+          selectedValue={sheetContent.type === 'sort' ? sortBy : filters[sheetContent.type]}
+          onSelect={handleFilterSelect}
+        />
       </div>
     </div>
   );

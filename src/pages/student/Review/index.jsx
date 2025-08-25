@@ -1,11 +1,11 @@
 import React, {useState} from 'react'; 
-import {useNavigate} from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 
 //아이콘
 import BackIcon from "../../../assets/Back.svg";
 import PersonProfile from "../../../assets/PersonProfile.svg";
 import WarningIcon from "../../../assets/Warning.svg";
-import ReviewStarIcon from "../../../assets/ReviewStar.svg";
 import StarEmptyIcon from "../../../assets/EmptyStar.svg";
 import StarFilledIcon from "../../../assets/FillStar.svg";
 
@@ -281,20 +281,74 @@ const submitButtonStyle = {
 };
 
 
-export default function WriteReviewPage() {
+export default function ReviewStudentPage() {
   const navigate = useNavigate();
-  const [rating, setRating] = useState(0); // 현재 클릭된 별점
-  const [hoverRating, setHoverRating] = useState(0); // 마우스가 올라간 별점
+  const { matchingId } = useParams();
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+  
   const handleGoBack = () => {
     navigate(-1);
+  };
+
+  // '제출하기' 버튼을 눌렀을 때 실행될 함수
+  const handleSubmit = async () => {
+    // 유효성 검사: 별점이 0점이거나 리뷰 내용이 비어있으면 제출 방지
+    if (rating === 0) {
+      alert("별점을 매겨주세요.");
+      return;
+    }
+    if (reviewText.trim() === "") {
+      alert("후기 내용을 입력해주세요.");
+      return;
+    }
+
+    // 로그인 시 저장된 인증 토큰을 가져옴
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('리뷰를 작성하려면 로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+   // API 명세에 맞게 전송할 데이터 만들기
+    const reviewData = {
+      matchingId: parseInt(matchingId), 
+      rating: rating,
+      content: reviewText,
+    };
+
+    try {
+      // axios를 사용해 POST 요청 보내기
+      await axios.post(
+        'https://unibiz.lion.it.kr/api/review', // 백엔드 API 주소
+         reviewData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      alert('리뷰가 성공적으로 제출되었습니다!');
+      navigate(-1); // 제출 후 이전 페이지로 돌아가기
+
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        alert('인증에 실패했습니다. 다시 로그인해주세요.');
+        navigate('/login');
+      } else {
+        alert('리뷰 제출 중 오류가 발생했습니다.');
+      }
+      console.error("API Error:", error);
+    }
   };
 
 return (
   <div style = {containerStyle}>
     <div style = {frameStyle}>
-      
       <header style = {headerStyle}>
         <button onClick = {handleGoBack} style = {backButtonStyle}>
           <img
@@ -306,14 +360,13 @@ return (
       </header>
 
       <main style = {mainContentStyle}>
-
         <div style = {userInfoStyle}>
           <img
             src = {PersonProfile}
             alt = "프로필"
             style = {userImageStyle}
           />
-          <p style = {userNameStyle}>컴포즈커피 용인외대점</p>
+          <p style = {userNameStyle}>컴포즈커피 한국외대점</p>
         </div>
 
         <section style = {rateStyle}>
@@ -370,7 +423,7 @@ return (
         </div>
       </main>
       <section style = {buttonAreaStyle}>
-        <button style = {submitButtonStyle}>제출하기</button>
+        <button style = {submitButtonStyle} onClick={handleSubmit}>제출하기</button>
       </section>
     </div>
   </div>
