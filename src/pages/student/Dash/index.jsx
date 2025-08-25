@@ -1,3 +1,4 @@
+// pages/student/Dash/index.jsx
 import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import HeartIconSrc from "../../../assets/Heart.svg";
@@ -140,11 +141,7 @@ const filterBarStyle = {
   boxSizing: "border-box",
   zIndex: 1,
 };
-const filterRowStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-};
+const filterRowStyle = { display: "inline-flex", alignItems: "center", gap: 8 };
 const chipStyle = {
   display: "flex",
   alignItems: "center",
@@ -342,7 +339,7 @@ function ShopCard({
   category,
   distance,
   onOpen,
-  type = "business",
+  type = "recruiting", // ✅ 구인글 찜 타입
 }) {
   const { isHeart, toggle } = useHeart();
   const liked = isHeart(type, id);
@@ -386,14 +383,26 @@ function ShopCard({
           const willAdd = !liked;
           try {
             await toggle(type, id);
-            if (willAdd) {
-              navigate(FAVORITES_PATH); // 추가되는 경우에만 찜 페이지로 이동
-            }
+            if (willAdd) navigate(FAVORITES_PATH);
           } catch {}
         }}
       />
     </div>
   );
+}
+
+/* ===== 서버 → 카드 매핑 ===== */
+function mapRecruitToCard(r = {}) {
+  return {
+    id: r.id ?? String(Date.now() + Math.random()),
+    title: r.title ?? "구인 공고",
+    status: r.recruiting ? "모집중" : "모집 마감",
+    period: r.progressPeriod || "",
+    store: r.storeName || "",
+    category: r.storeCategory || "",
+    distance: "",
+    raw: r,
+  };
 }
 
 /* ===== 메인 ===== */
@@ -403,10 +412,10 @@ export default function DashStudent() {
   // 이름: 서버에서 가져오기
   const [userName, setUserName] = useState("");
 
-  // 필터 상태
+  // 필터 상태 (UI 유지)
   const [area, setArea] = useState("우만동 외");
   const [price, setPrice] = useState("가격");
-  const [category, setCategory] = useState("카테고리");
+  const [category, setCategory] = useState("카테고리"); // ✅ API category 파라미터로 사용
   const [sort, setSort] = useState("정확도 순");
 
   // 바텀시트
@@ -414,50 +423,17 @@ export default function DashStudent() {
   const [sheetTitle, setSheetTitle] = useState("필터");
   const [openSection, setOpenSection] = useState(null);
 
-  // 섹션 refs
+  // refs
   const areaRef = useRef(null);
   const priceRef = useRef(null);
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
   const scrollRef = useRef(null);
 
-  // 목록: 일단 더미 데이터
-  const [items, setItems] = useState([
-    {
-      id: 101,
-      title: "디저트 메뉴 SNS 홍보 구인",
-      status: "모집중",
-      period: "2024.02.14 ~ 2024.03.20",
-      store: "컴포즈커피 용인 외대점",
-      category: "카페",
-      distance: "n km 떨어짐",
-      liked: false,
-    },
-    {
-      id: 102,
-      title: "디저트 메뉴 SNS 홍보 구인",
-      status: "모집중",
-      period: "2024.02.14 ~ 2024.03.20",
-      store: "컴포즈커피 용인 외대점",
-      category: "카페",
-      distance: "n km 떨어짐",
-      liked: false,
-    },
-    {
-      id: 103,
-      title: "디저트 메뉴 SNS 홍보 구인",
-      status: "모집중",
-      period: "2024.02.14 ~ 2024.03.20",
-      store: "컴포즈커피 용인 외대점",
-      category: "카페",
-      distance: "n km 떨어짐",
-      liked: false,
-    },
-  ]);
-
-  // 로딩/에러(지금은 이름만 서버콜)
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  // 목록
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // 이름 불러오기
   useEffect(() => {
@@ -468,10 +444,41 @@ export default function DashStudent() {
         setUserName(name);
       } catch (e) {
         console.error("학생 정보 조회 실패", e);
-        setUserName(""); // 실패 시 "누구님" 노출
+        setUserName("");
       }
     })();
   }, []);
+
+  // 🔗 구인글 목록 조회
+  const fetchRecruitings = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        category: category === "카테고리" ? undefined : category,
+        // keyword: '',                // 검색 UI 생기면 연결
+        // isRecruiting: true,        // 필요 시 토글 붙이면 사용
+      };
+      const res = await axiosInstance.get("/api/recruit/", { params });
+      const list = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      setItems(list.map(mapRecruitToCard));
+    } catch (e) {
+      console.error("구인글 목록 조회 실패", e);
+      setError(e);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecruitings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   const openSheet = (section) => {
     setOpenSection(section);
@@ -575,25 +582,31 @@ export default function DashStudent() {
               목록을 불러오지 못했습니다.
             </div>
           )}
-
-          {items.map((it) => (
-            <ShopCard
-              key={it.id}
-              id={it.id}
-              type="business"
-              title={it.title}
-              status={it.status}
-              period={it.period}
-              store={it.store}
-              category={it.category}
-              distance={it.distance}
-              onOpen={() =>
-                navigate(DETAIL_PATH, {
-                  state: { ...it },
-                })
-              }
-            />
-          ))}
+          {!loading &&
+            !error &&
+            items.map((it) => (
+              <ShopCard
+                key={it.id}
+                id={it.id}
+                type="recruiting"
+                title={it.title}
+                status={it.status}
+                period={it.period}
+                store={it.store}
+                category={it.category}
+                distance={it.distance}
+                onOpen={() =>
+                  navigate(DETAIL_PATH, {
+                    state: { ...it.raw, __card: it },
+                  })
+                }
+              />
+            ))}
+          {!loading && !error && items.length === 0 && (
+            <div style={{ fontSize: 12, color: "#767676" }}>
+              표시할 구인글이 없습니다.
+            </div>
+          )}
         </div>
 
         {/* Bottom Sheet (필터) */}
@@ -614,7 +627,7 @@ export default function DashStudent() {
           </div>
 
           <div style={sheetScrollStyle} ref={scrollRef}>
-            {/* 동네 */}
+            {/* 동네 (UI 유지용) */}
             <div ref={areaRef}>
               <div style={sectionTitleStyle}>동네</div>
               {["우만동 외", "인계동", "영통구", "장안구", "수원 전체"].map(
@@ -637,7 +650,7 @@ export default function DashStudent() {
               )}
             </div>
 
-            {/* 가격 */}
+            {/* 가격 (UI 유지용) */}
             <div ref={priceRef}>
               <div style={sectionTitleStyle}>가격</div>
               {[
@@ -664,7 +677,7 @@ export default function DashStudent() {
               })}
             </div>
 
-            {/* 카테고리(업종) */}
+            {/* 카테고리 → API category 파라미터 */}
             <div ref={categoryRef}>
               <div style={sectionTitleStyle}>카테고리(업종)</div>
               {[
@@ -682,7 +695,7 @@ export default function DashStudent() {
                     key={label}
                     style={optionRowStyle(active)}
                     onClick={() => {
-                      setCategory(label);
+                      setCategory(label); // 변경 시 자동 재조회
                       setSheetTitle("카테고리");
                     }}
                   >
@@ -693,7 +706,7 @@ export default function DashStudent() {
               })}
             </div>
 
-            {/* 정렬 */}
+            {/* 정렬 (UI 유지용) */}
             <div ref={sortRef}>
               <div style={sectionTitleStyle}>정렬</div>
               {["정확도 순", "최신 순", "낮은 가격 순", "높은 가격 순"].map(
