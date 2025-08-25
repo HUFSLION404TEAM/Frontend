@@ -141,11 +141,7 @@ const filterBarStyle = {
   boxSizing: "border-box",
   zIndex: 1,
 };
-const filterRowStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-};
+const filterRowStyle = { display: "inline-flex", alignItems: "center", gap: 8 };
 const chipStyle = {
   display: "flex",
   alignItems: "center",
@@ -183,7 +179,7 @@ const writeBtnStyle = {
   outline: "none",
 };
 
-/* ===== 리스트(세로 1열 카드) ===== */
+/* ===== 리스트 ===== */
 const listTop = STATUS_H + HEADER_H + 10 + INFO_H + FILTER_H;
 const listContainerStyle = {
   position: "absolute",
@@ -226,11 +222,7 @@ const infoCol = {
   width: 190,
   alignItems: "flex-start",
 };
-const nameRow = {
-  display: "flex",
-  alignItems: "baseline",
-  gap: 6,
-};
+const nameRow = { display: "flex", alignItems: "baseline", gap: 6 };
 const nameStyle = {
   color: "#111",
   fontFamily: "Pretendard",
@@ -255,13 +247,6 @@ const fieldStyle = {
   textOverflow: "ellipsis",
   maxWidth: 190,
 };
-const periodRowStyle = {
-  display: "flex",
-  alignItems: "center",
-  gap: 4,
-  fontSize: 12,
-  color: "#767676",
-};
 const tempRowStyle = {
   display: "flex",
   alignItems: "center",
@@ -278,7 +263,7 @@ const likeBtnStyle = {
   cursor: "pointer",
 };
 
-/* ===== 온보딩 fallback 제거, API 사용 ===== */
+/* ===== 카드 컴포넌트 ===== */
 function CandidateCard({
   id,
   name,
@@ -308,7 +293,7 @@ function CandidateCard({
       <div style={infoCol}>
         <div style={nameRow}>
           <span style={nameStyle}>{name}</span>
-          <span style={ageStyle}>{age}</span>
+          {age ? <span style={ageStyle}>{age}</span> : null}
         </div>
         <div style={fieldStyle}>{field}</div>
         <div style={tempRowStyle}>
@@ -334,11 +319,42 @@ function CandidateCard({
   );
 }
 
+/* ===== 서버 → 카드 데이터 매핑 ===== */
+function mapRecruitToCard(r = {}) {
+  const id =
+    r.id ??
+    r.recruitId ??
+    r.postId ??
+    r.uuid ??
+    String(Date.now() + Math.random());
+  const title = r.title ?? r.postTitle ?? r.name ?? "구인 공고";
+  const category = r.category ?? r.jobCategory ?? r.type ?? "";
+  // isRecruiting(boolean) 또는 status 문자열 추론
+  const isRecruiting =
+    typeof r.isRecruiting === "boolean"
+      ? r.isRecruiting
+      : String(r.status ?? "")
+          .toLowerCase()
+          .includes("recruit");
+  const temperature = r.temperature ?? r.heat ?? null;
+  const tempText =
+    temperature != null ? `${temperature}°C` : isRecruiting ? "모집중" : "마감";
+
+  return {
+    id,
+    name: title, // 카드 큰 타이틀
+    age: "", // 여긴 표시 안함
+    field: category, // 카테고리 표기
+    temp: tempText, // 상태/온도
+    raw: r, // 상세 이동 시 전달
+  };
+}
+
 /* ===== 메인(소상공인 대시보드) ===== */
 export default function DashOwner() {
   const navigate = useNavigate();
 
-  // 가게/사업자 이름: 서버에서 가져오기
+  // 가게/사업자 이름
   const [storeName, setStoreName] = useState("");
 
   useEffect(() => {
@@ -346,7 +362,6 @@ export default function DashOwner() {
       try {
         const res = await axiosInstance.get("/api/store/mypage");
         const data = res?.data?.data;
-        // 우선순위: 등록된 매장명 → 유저 이름
         const nameFromStore = Array.isArray(data?.stores)
           ? (data.stores[0]?.storeName || "").trim()
           : "";
@@ -354,16 +369,20 @@ export default function DashOwner() {
         setStoreName(nameFromStore || nameFromUser || "");
       } catch (e) {
         console.error("업체 마이페이지 조회 실패", e);
-        setStoreName(""); // 실패 시 기본 문구 노출
+        setStoreName("");
       }
     })();
   }, []);
 
-  // ---- 필터 상태 (UI 유지용) ----
-  const [area, setArea] = useState("우만동 외");
-  const [price, setPrice] = useState("가격");
-  const [category, setCategory] = useState("카테고리");
-  const [sort, setSort] = useState("정확도 순");
+  // ---- 필터 상태 ----
+  const [area, setArea] = useState("우만동 외"); // API에는 안 보냄(로컬 UI)
+  const [price, setPrice] = useState("가격"); // API에는 안 보냄(로컬 UI)
+  const [category, setCategory] = useState("카테고리"); // ✅ API의 category로 매핑
+  const [sort, setSort] = useState("정확도 순"); // API에는 안 보냄(로컬 UI)
+
+  // 검색/상태 쿼리
+  const [keyword] = useState(""); // 검색 입력 UI가 없으니 일단 공란
+  const [onlyRecruiting] = useState(true); // 기본값: 모집중만
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTitle, setSheetTitle] = useState("필터");
@@ -374,41 +393,55 @@ export default function DashOwner() {
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
 
-  // 목록: API 없으므로 더미 사용
-  const [items] = useState([
-    {
-      id: 201,
-      name: "김재서",
-      age: "24",
-      field: "기획/마케팅 · SNS 운영 · 포스터 디자인",
-      temp: "37.2°C",
-      liked: false,
-    },
-    {
-      id: 202,
-      name: "이서준",
-      age: "23",
-      field: "촬영/편집 · 숏폼 · 사진 보정",
-      temp: "36.9°C",
-      liked: false,
-    },
-    {
-      id: 203,
-      name: "박하늘",
-      age: "22",
-      field: "브랜딩 · 로고/배너 디자인 · 리서치",
-      temp: "37.5°C",
-      liked: false,
-    },
-  ]);
+  // ✅ 구인글 목록
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // 로딩/에러: 현재는 목록 API가 없어 사용하지 않지만, 표기 유지
-  const loading = false;
-  const error = null;
+  // 구인글 불러오기
+  const fetchRecruitList = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // "카테고리" 라벨은 API로 보내지 않음
+      const categoryParam = category === "카테고리" ? undefined : category;
+      const params = {
+        category: categoryParam,
+        keyword: keyword || undefined,
+        isRecruiting: onlyRecruiting,
+      };
+
+      const res = await axiosInstance.get("/api/recruit/", { params });
+      // 응답 포맷 가변성 고려: {data: [...] } 혹은 바로 [...]
+      const list = Array.isArray(res?.data?.data)
+        ? res.data.data
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+      setItems(list.map(mapRecruitToCard));
+    } catch (e) {
+      console.error("구인글 목록 조회 실패", e);
+      setError(e);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 초기 + 카테고리 변경 시 재조회
+  useEffect(() => {
+    fetchRecruitList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   const openSheet = (section) => {
     setOpenSection(section);
-    const titleMap = { area: "동네", price: "가격", category: "카테고리", sort: "정렬" };
+    const titleMap = {
+      area: "동네",
+      price: "가격",
+      category: "카테고리",
+      sort: "정렬",
+    };
     setSheetTitle(titleMap[section] || "필터");
     setSheetOpen(true);
   };
@@ -463,10 +496,10 @@ export default function DashOwner() {
           <div style={infoTitleStyle}>
             {(storeName || "우리 가게") + "님을 위한"}
             <br />
-            대학생 기획자 프로필
+            구인 공고
           </div>
           <div style={infoSubStyle}>
-            함께 우리 가게를 알릴 기획자분들을 찾아보세요!
+            원하는 카테고리로 대학생 인재를 찾아보세요!
           </div>
         </div>
 
@@ -494,7 +527,9 @@ export default function DashOwner() {
             type="button"
             style={writeBtnStyle}
             onClick={() =>
-              navigate(WRITE_PATH.startsWith("/") ? WRITE_PATH : `/${WRITE_PATH}`)
+              navigate(
+                WRITE_PATH.startsWith("/") ? WRITE_PATH : `/${WRITE_PATH}`
+              )
             }
           >
             글쓰기
@@ -512,23 +547,24 @@ export default function DashOwner() {
             </div>
           )}
 
-          {items.map((it) => (
-            <CandidateCard
-              key={it.id}
-              id={it.id}
-              type="planner"
-              name={it.name}
-              age={it.age}
-              field={it.field}
-              temp={it.temp}
-              period={it.period}
-              onOpen={() =>
-                navigate(DETAIL_PATH, {
-                  state: { ...it },
-                })
-              }
-            />
-          ))}
+          {!loading &&
+            !error &&
+            items.map((it) => (
+              <CandidateCard
+                key={it.id}
+                id={it.id}
+                type="planner"
+                name={it.name}
+                age={it.age}
+                field={it.field}
+                temp={it.temp}
+                onOpen={() =>
+                  navigate(DETAIL_PATH, {
+                    state: { ...it.raw, __card: it }, // 원본 + 카드정보 전달
+                  })
+                }
+              />
+            ))}
         </div>
 
         {/* Bottom Sheet (필터) */}
@@ -605,141 +641,68 @@ export default function DashOwner() {
           >
             {/* 동네 */}
             <div ref={areaRef}>
-              <div style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
                 동네
               </div>
-              {["우만동 외", "인계동", "영통구", "장안구", "수원 전체"].map((label) => {
-                const active = area === label;
-                return (
-                  <div
-                    key={label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "12px 6px",
-                      fontSize: 15,
-                      borderBottom: "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
-                      cursor: "pointer",
-                      color: active ? "#111" : "#222",
-                      background: active ? "rgba(0,128,255,0.06)" : "transparent",
-                      borderRadius: 8,
-                    }}
-                    onClick={() => {
-                      setArea(label);
-                      setSheetTitle("동네");
-                    }}
-                  >
-                    <span>{label}</span>
+              {["우만동 외", "인계동", "영통구", "장안구", "수원 전체"].map(
+                (label) => {
+                  const active = area === label;
+                  return (
                     <div
+                      key={label}
                       style={{
-                        width: 16,
-                        height: 16,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 6px",
+                        fontSize: 15,
+                        borderBottom:
+                          "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                        cursor: "pointer",
+                        color: active ? "#111" : "#222",
+                        background: active
+                          ? "rgba(0,128,255,0.06)"
+                          : "transparent",
                         borderRadius: 8,
-                        border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
-                        background: active ? "#0080FF" : "transparent",
                       }}
-                    />
-                  </div>
-                );
-              })}
+                      onClick={() => {
+                        setArea(label);
+                        setSheetTitle("동네");
+                      }}
+                    >
+                      <span>{label}</span>
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                          background: active ? "#0080FF" : "transparent",
+                        }}
+                      />
+                    </div>
+                  );
+                }
+              )}
             </div>
 
             {/* 가격 */}
             <div ref={priceRef}>
-              <div style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
                 가격
               </div>
-              {["가격", "₩0~₩10,000", "₩10,000~₩30,000", "₩30,000~₩50,000", "₩50,000+"].map(
-                (label) => {
-                  const active = price === label;
-                  return (
-                    <div
-                      key={label}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px 6px",
-                        fontSize: 15,
-                        borderBottom: "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
-                        cursor: "pointer",
-                        color: active ? "#111" : "#222",
-                        background: active ? "rgba(0,128,255,0.06)" : "transparent",
-                        borderRadius: 8,
-                      }}
-                      onClick={() => {
-                        setPrice(label);
-                        setSheetTitle("가격");
-                      }}
-                    >
-                      <span>{label}</span>
-                      <div
-                        style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: 8,
-                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
-                          background: active ? "#0080FF" : "transparent",
-                        }}
-                      />
-                    </div>
-                  );
-                }
-              )}
-            </div>
-
-            {/* 카테고리(업종) */}
-            <div ref={categoryRef}>
-              <div style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}>
-                카테고리(업종)
-              </div>
-              {["카테고리", "기획/마케팅", "디자인", "촬영/편집", "서빙/매장", "기타"].map(
-                (label) => {
-                  const active = category === label;
-                  return (
-                    <div
-                      key={label}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px 6px",
-                        fontSize: 15,
-                        borderBottom: "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
-                        cursor: "pointer",
-                        color: active ? "#111" : "#222",
-                        background: active ? "rgba(0,128,255,0.06)" : "transparent",
-                        borderRadius: 8,
-                      }}
-                      onClick={() => {
-                        setCategory(label);
-                        setSheetTitle("카테고리");
-                      }}
-                    >
-                      <span>{label}</span>
-                      <div
-                        style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: 8,
-                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
-                          background: active ? "#0080FF" : "transparent",
-                        }}
-                      />
-                    </div>
-                  );
-                }
-              )}
-            </div>
-
-            {/* 정렬 */}
-            <div ref={sortRef}>
-              <div style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}>
-                정렬
-              </div>
-              {["정확도 순", "최신 순", "낮은 가격 순", "높은 가격 순"].map((label) => {
-                const active = sort === label;
+              {[
+                "가격",
+                "₩0~₩10,000",
+                "₩10,000~₩30,000",
+                "₩30,000~₩50,000",
+                "₩50,000+",
+              ].map((label) => {
+                const active = price === label;
                 return (
                   <div
                     key={label}
@@ -749,15 +712,18 @@ export default function DashOwner() {
                       justifyContent: "space-between",
                       padding: "12px 6px",
                       fontSize: 15,
-                      borderBottom: "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                      borderBottom:
+                        "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
                       cursor: "pointer",
                       color: active ? "#111" : "#222",
-                      background: active ? "rgba(0,128,255,0.06)" : "transparent",
+                      background: active
+                        ? "rgba(0,128,255,0.06)"
+                        : "transparent",
                       borderRadius: 8,
                     }}
                     onClick={() => {
-                      setSort(label);
-                      setSheetTitle("정렬");
+                      setPrice(label);
+                      setSheetTitle("가격");
                     }}
                   >
                     <span>{label}</span>
@@ -773,6 +739,109 @@ export default function DashOwner() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* 카테고리(업종) → ✅ API category 파라미터로 사용 */}
+            <div ref={categoryRef}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                카테고리(업종)
+              </div>
+              {[
+                "카테고리",
+                "기획/마케팅",
+                "디자인",
+                "촬영/편집",
+                "서빙/매장",
+                "기타",
+              ].map((label) => {
+                const active = category === label;
+                return (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px 6px",
+                      fontSize: 15,
+                      borderBottom:
+                        "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                      cursor: "pointer",
+                      color: active ? "#111" : "#222",
+                      background: active
+                        ? "rgba(0,128,255,0.06)"
+                        : "transparent",
+                      borderRadius: 8,
+                    }}
+                    onClick={() => {
+                      setCategory(label); // 변경 시 자동 재조회(useEffect)
+                      setSheetTitle("카테고리");
+                    }}
+                  >
+                    <span>{label}</span>
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: 8,
+                        border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                        background: active ? "#0080FF" : "transparent",
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 정렬(현재 API 미사용, 로컬 UI 유지) */}
+            <div ref={sortRef}>
+              <div
+                style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
+              >
+                정렬
+              </div>
+              {["정확도 순", "최신 순", "낮은 가격 순", "높은 가격 순"].map(
+                (label) => {
+                  const active = sort === label;
+                  return (
+                    <div
+                      key={label}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 6px",
+                        fontSize: 15,
+                        borderBottom:
+                          "1px solid " + (active ? "#EAF3FF" : "#F3F3F3"),
+                        cursor: "pointer",
+                        color: active ? "#111" : "#222",
+                        background: active
+                          ? "rgba(0,128,255,0.06)"
+                          : "transparent",
+                        borderRadius: 8,
+                      }}
+                      onClick={() => {
+                        setSort(label);
+                        setSheetTitle("정렬");
+                      }}
+                    >
+                      <span>{label}</span>
+                      <div
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          border: `2px solid ${active ? "#0080FF" : "#D0D0D0"}`,
+                          background: active ? "#0080FF" : "transparent",
+                        }}
+                      />
+                    </div>
+                  );
+                }
+              )}
             </div>
           </div>
         </div>
