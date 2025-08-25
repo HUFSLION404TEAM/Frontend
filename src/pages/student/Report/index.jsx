@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import axios from "axios";
 
 import BackIcon from "../../../assets/Back.svg";
 import arrowDown from "../../../assets/Dropdown.svg";
@@ -317,15 +319,30 @@ const submitButtonStyle = {
   lineHeight: '18px',
 };
 
+// API가 요구하는 reportType과 UI에 표시되는 텍스트 매핑
+const REPORT_TYPE_MAP = {
+  '무응답 또는 연락 두절': 'NO_RESPONSE',
+  '과도한 요구 또는 무리한 요청': 'EXCESSIVE_DEMANDS',
+  '부적절한 언행 또는 비매너 행동': 'INAPPROPRIATE_BEHAVIOR',
+  '허위 정보 등록': 'FALSE_INFORMATION',
+  '외부 홍보 / 광고 목적 활동': 'ADVERTISING',
+  '기타 (직접 작성)': 'ETC',
+};
 
 //메인컴포넌트
-export default function CustomDropdown() {
+export default function ReportPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { matchingId } = useParams(); // URL에서 matchingId 가져오기
+
+  const targetName = location.state?.targetName || '신고 대상'; // 이전 페이지에서 넘겨받은 이름
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [description, setDescription] = useState('');
   const dropdownRef = useRef(null);
 
   const toggleDropdown = () => setIsOpen(!isOpen);
-
   const handleOptionClick = (option) => {
     setSelectedOption(option);
     setIsOpen(false);
@@ -343,11 +360,47 @@ export default function CustomDropdown() {
     };
   }, [dropdownRef]);
 
+  // '제출하기' 버튼 클릭 시 실행될 API 호출 함수
+  const handleSubmit = async () => {
+    if (!selectedOption) {
+      alert('신고 유형을 선택해주세요.');
+      return;
+    }
+    if (description.trim() === '') {
+      alert('신고 내용을 입력해주세요.');
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+    const reportData = {
+      matchingId: parseInt(matchingId),
+      reportType: REPORT_TYPE_MAP[selectedOption],
+      description: description,
+    };
+
+    try {
+      await axios.post(
+        'https://unibiz.lion.it.kr/api/report',
+        reportData,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      alert('신고가 정상적으로 접수되었습니다.');
+      navigate(-1);
+    } catch (error) {
+      alert('신고 접수 중 오류가 발생했습니다.');
+      console.error(error);
+    }
+  };
 
   return (
     <div style = {containerStyle}>
       <div style = {frameStyle}>
-        
         <header style = {headerStyle}>
           <img 
             src = {BackIcon} 
@@ -362,69 +415,62 @@ export default function CustomDropdown() {
         <main style = {mainContentStyle}>
           <div style = {targetInfoStyle}>
             <div style = {targetImageStyle}/>
-            <h2 style = {targetNameStyle}>컴포즈커피 한국외대점</h2>
+            <h2 style = {targetNameStyle}>컴포즈커피 용인외대점</h2>
           </div>
 
-          <section style =  {reportSectionStyle}>
-            <h2 style = {reportSectionTitleStyle}>신고 유형</h2>
-            <>
-              <style>
-                {`
-                  .dropdown-item:hover {
-                    background-color: #f5f5f5;
-                  }
-                `}
-              </style>
-              <div style={dropdownContainerStyle} ref={dropdownRef}>
-                {/* 선택된 값을 보여주는 헤더 */}
-                <button type="button" onClick={toggleDropdown} style={{...dropdownHeaderStyle, borderColor: isOpen ? '#0183F0' : '#E0E0E0'}}>
-                  <span style={selectedOption ? dropdownHeaderTextStyle : placeholderTextStyle}>
-                    {selectedOption || '신고 유형을 선택해주세요.'}
-                  </span>
-                  <ArrowIcon isOpen={isOpen} />
-                </button>
-
-                {/* 옵션 목록 (isOpen이 true일 때만 보임) */}
-                {isOpen && (
-                  <ul style={dropdownListStyle}>
-                    {reportOptions.map((option, index) => (
-                      <li key={index}>
-                        <button
+          <section style={reportSectionStyle}>
+            <h2 style={reportSectionTitleStyle}>신고 유형</h2>
+            <div style={dropdownContainerStyle} ref={dropdownRef}>
+              <button type="button" onClick={toggleDropdown} style={dropdownHeaderStyle}>
+                <span>{selectedOption || '신고 유형을 선택해주세요.'}</span>
+                <img src={isOpen ? arrowUp : arrowDown} alt="arrow" />
+              </button>
+              {isOpen && (
+                <ul style={dropdownListStyle}>
+                  {reportOptions.map((option, index) => (
+                    <li key={index}>
+                      <button
                           type="button"
                           className="dropdown-item" // hover 스타일을 위한 클래스
                           style={dropdownItemStyle}
                           onClick={() => handleOptionClick(option)}
-                        >
-                          {option}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </>
-          </section>      
-          <section style = {reportSectionStyle}>
-            <h2 style = {reportSectionTitleStyle}>신고 내용</h2>
+                      >
+                        {option}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+
+          <section style={reportSectionStyle}>
+            <h2 style={reportSectionTitleStyle}>신고 내용</h2>
             <textarea
-              style = {textAreaStyle}
-              placeholder = "예) 리뷰에 부적절한 내용이 올라와있고, 협의되지 않은 무리한 요구를 했습니다."
-            />
-            <div style = {noticeAreaStyle}>
-              <img
-                src = {WarningIcon}
-                alt = "경고" 
-              />
-              <span style = {noticeTextStyle}>
-                  이 회원이 신고 대상에 해당하는지 다시 한번 확인하여 주시기 바랍니다.
-              </span>
+              style={textAreaStyle}
+              placeholder="예) 리뷰에 부적절한 내용이 올라와있고, 협의되지 않은 무리한 요구를 했습니다."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+          />
+            <div style={noticeAreaStyle}>
+              <img src={WarningIcon} alt="경고" />
+              <span>이 회원이 신고 대상에 해당하는지 다시 한번 확인하여 주시기 바랍니다.</span>
             </div>
           </section>
         </main>
+
         <section style = {buttonAreaStyle}>
-        <button style = {submitButtonStyle}>제출하기</button>
-      </section>
+          <button style={submitButtonStyle} onClick={handleSubmit}>제출하기</button>
+        </section>
       </div>
     </div>
   )
 };
+
+
+
+
+
+
+
+

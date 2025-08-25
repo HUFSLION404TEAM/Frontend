@@ -66,7 +66,7 @@ function App() {
             <Route path="search" element={<SearchOwner />} />
             <Route path="match" element={<MatchOwner />} />
             <Route path="review" element={<ReviewOwner />} />
-            <Route path="report" element={<ReportOwner />} />
+            <Route path="report/:matchingId" element={<ReportOwner />} />
             <Route path="request" element={<Request />} />
             <Route path="detail" element={<DetailOwner />} />
             <Route path="write" element={<WriteOwner />} />
@@ -85,7 +85,7 @@ function App() {
             <Route path="match" element={<MatchStudent />} />
             <Route path="feedback" element={<FeedbackStudent />} />
             <Route path="review" element={<ReviewStudent />} />
-            <Route path="report" element={<ReportStudent />} />
+            <Route path="report/:matchingId" element={<ReportStudent />} />
             <Route path="apply" element={<Apply />} />
             <Route path="detail" element={<DetailStudent />} />
           </Route>

@@ -1,22 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
+// --- SVG 아이콘 Import ---
 import { ReactComponent as BackIcon } from "../../../assets/Back.svg";
 import { ReactComponent as HeartH } from "../../../assets/Heart.svg";
 import { ReactComponent as Heart } from "../../../assets/Heart2.svg";
-import { ReactComponent as Search } from "../../../assets/SearchB.svg";
+import { ReactComponent as SearchIcon } from "../../../assets/SearchB.svg";
 import { ReactComponent as DropDownB } from "../../../assets/downBar.svg";
-import { ReactComponent as DropDownG } from "../../../assets/Dropdown.svg";
 import { ReactComponent as Temp } from "../../../assets/Temperature.svg";
 import { ReactComponent as EmptyHeart} from "../../../assets/emptyHeart.svg";
 
-const businessData = [
-  { id: '1', name: '김대학', category: '구직 중', location: '용인시 처인구', time: '20건', temp: 36.5 },
-  { id: '2', name: '박대학', category: '휴식 중', location: '용인시 수지구', time: '30건', temp: 37.5 },
-  { id: '3', name: '이대학', category: '구직 중', location: '용인시 기흥구', time: '10건', temp: 36.0 },
-  { id: '4', name: '김대학', category: '구직 중', location: '용인시 처인구', time: '20건', temp: 36.2 },
-];
-
+// --- 스타일 객체 (DashOwner 스타일과 통합 및 수정) ---
 const containerStyle = { 
   display: 'flex', 
   justifyContent: 'center', 
@@ -25,325 +20,433 @@ const containerStyle = {
   backgroundColor: "#f0f0f0", 
   fontFamily: "Pretendard, sans-serif" 
 };
-
 const frameStyle = { 
   width: 390, 
   height: 844,
   backgroundColor: "#FFFFFF",
-  display: 'flex', 
-  position: 'relative',
-  flexDirection: 'column',
-  justifyContent: 'center',
+  position: "relative",
+  overflow: "hidden",
 };
-
 const headerContainerStyle = { 
-  height: 30,
+  position: 'absolute',
+  top: '44px',
+  left: 0,
+  right: 0,
+  height: '59px',
   display: 'flex',
   flexDirection: "row",
   alignItems: 'center',
-  justifyContent: 'space-between',
-  position: 'relative',
+  justifyContent: 'center',
   padding: '0 20px',
-  marginTop: '59px',
-  marginBottom: '10px',
+  zIndex: 3,
+  backgroundColor: 'white',
 };
-
-const headerButtonStyle = { 
+const backButtonStyle = { 
   background:'none',
   border: 'none',
   padding: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  position: 'absolute',
+  left: '20px',
+  cursor: 'pointer',
 };
-
 const headerTitleStyle = { 
   color: '#000',
-  fontFamily: 'Pretendard',
   fontSize: '20px',
-  fontStyle: 'normal',
   fontWeight: 600,
-  lineHeight: '140%', // 28px
-  letterSpacing: '-0.5px',
-
+};
+const heartHeaderButtonStyle = {
+  background:'none',
+  border: 'none',
+  padding: 0,
   position: 'absolute',
+  right: '20px',
+  cursor: 'pointer',
+};
+const searchInputContainerStyle = {
+  position: 'absolute',
+  top: '113px', // Header 아래 위치
   left: '50%',
   transform: 'translateX(-50%)',
-  pointerEvent: 'none',
-};
-
-const searchBarStyle = {
   display: "flex",
-  width: "306px",
-  padding: "10px 12px 10px 20px",
+  width: "342px",
+  padding: "10px 20px",
   alignItems: "center",
-  gap: "20px",
+  gap: "10px",
   boxSizing: "border-box",
-
   borderRadius: "12px",
-  border: "1px solid #0080FF",
-  background: "linear-gradient(92deg, rgba(255, 255, 255, 0.60) 0%, rgba(255, 255, 255, 0.80) 100%)",
+  border: "1px solid #E0E0E0",
+  background: "#F8F9FA",
+  zIndex: 2,
 };
-
 const searchInputStyle = {
   flex: 1,
   border: 'none',
   outline: 'none',
-  color: "#000",
-  fontFamily: "Pretendard",
   fontSize: "14px",
-  fontStyle: "normal",
   fontWeight: 500,
-  lineHeight: "140%", // 19.6px
-  letterSpacing: "-0.35px",
+  background: 'transparent',
 };
-
-
-const filterContainerStyle = {
-  width: 360,
-  height: 75,
-  display: 'flex',
-  alignItems: "center",
-  justifyContent: 'space-between',
-  flexDirection: 'column',
-  gap: '14px',
-};
-
-const filterButtonsStyle = {
-  width: 308,
-  display: 'flex',
-  alignItems: "center",
-  justifyContent: 'space-between',
-};
-
-const filterButtonStyle = {
+const filterBarStyle = {
+  position: 'absolute',
+  top: '177px', // 검색창 아래 위치
+  left: '24px',
+  right: '24px',
+  height: '44px',
   display: "flex",
-  padding: "6px 10px",
   alignItems: "center",
-  gap: "10px",
-  borderRadius: "10px",
-  border: "1px solid #0080FF",
-  boxShadow: "0 4px 7px 0 rgba(0, 0, 0, 0.25)",
-  backdropFilter: "blur(7.5px)",
-  backgroundColor: 'white',
-
-  color: "#000",
-  textAlign: "center",
-  fontFamily: "Pretendard",
-  fontSize: "10px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "normal",
+  justifyContent: "space-between",
+  zIndex: 1,
 };
-
-const listHeaderStyle = {
-  width: 360,
+const filterButtonsContainerStyle = {
   display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
+  gap: '8px',
 };
-
-const itemCountStyle = {
-  color: "#A69F9F",
-  fontFamily: "Pretendard",
+const chipButtonStyle = {
+  display: "flex",
+  padding: "6px 12px",
+  alignItems: "center",
+  gap: "6px",
+  borderRadius: "16px",
+  border: "1px solid #E0E0E0",
+  background: 'white',
   fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
+  cursor: 'pointer',
 };
-
-const sortStyle = {
-  display: 'flex',
-  boxSizing: "border-box",
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: 0,
-  border: 'none',
-
-  color: "#A69F9F",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-  backgroundColor: 'white',
+const listContainerStyle = {
+  position: "absolute",
+  top: "231px", // 필터바 아래 위치
+  bottom: 0,
+  left: 0,
+  right: 0,
+  padding: '0 24px 24px 24px',
+  overflowY: "auto",
+  display: "flex",
+  flexDirection: "column",
+  gap: '12px',
 };
-
-const listWrapperStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '20px',
-};
-
-const mainContentStyle = { 
-  padding: '20px 0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  position: 'relative',
-  flexDirection: 'column',
-  gap:'20px',
-};
-
 const cardStyle = {
-  width: 345,
-  heigth: 100,
+  width: '100%',
+  height: '110px',
   display: "flex",
   position:'relative',
-  width: "345px",
-  padding: "10px",
+  padding: "12px",
   flexDirection: "row",
-  justifyContent: "center",
   alignItems: "center",
-  gap: "20px",
-
+  gap: "16px",
   borderRadius: "16px",
   background: "linear-gradient(180deg, rgba(255, 255, 255, 0.40) 0%, rgba(255, 255, 255, 0.60) 100%)",
   boxShadow: "3px 3px 8px 0 rgba(0, 0, 0, 0.08)",
+  boxSizing: 'border-box',
+  cursor: 'pointer',
 };
-
 const imagePlaceholderStyle = {
-  display: "flex",
-  boxSizing: "border-box",
-  position: 'relative',
   width: "80px",
   height: "80px",
-  aspectRatio: "1 / 1",
-  borderRadius: "100px",
-  background: "#ABB0BC",
+  borderRadius: "50%",
+  background: "#E9ECEF",
+  flexShrink: 0,
 };
-
 const infoContainerStyle = {
   display: "flex",
-  width: "185px",
-  padding: "10px",
   flexDirection: "column",
   justifyContent: "center",
   alignItems: "flex-start",
+  gap: "6px",
+  flex: 1,
+};
+const titleStyle = {
+  fontSize: "18px",
+  fontWeight: 600,
+  color: '#111',
+};
+const subtitleStyle = {
+  fontSize: "13px",
+  color: "#868E96",
+};
+const temperatureStyle = {
+  fontSize: "13px",
+  color: "#495057",
+  display: "flex",
+  alignItems: "center",
   gap: "4px",
 };
-
-const titleStyle = {
-  color: "#111",
-  fontFamily: "Pretendard",
-  fontSize: "20px",
-  fontStyle: "normal",
-  fontWeight: 600,
-  lineHeight: "140%", // 28px
-  letterSpacing: "-0.5px",
-};
-
-const subtitleStyle = {
-  color: "#111",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 400,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-  marginBottom: '3px',
-};
-
-const temperatureStyle = {
-  color: "#767676",
-  fontFamily: "Pretendard",
-  fontSize: "12px",
-  fontStyle: "normal",
-  fontWeight: 500,
-  lineHeight: "140%", // 16.8px
-  letterSpacing: "-0.3px",
-
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  gap: "6px",
-};
-
 const likeButtonStyle = {
   background: 'none',
   border: 'none',
   padding: 0, 
   position: 'absolute',
-  top: '10px',
-  right: '10px',
-  boxSizing: "border-box",
-
-  width: 24,
-  heigth: 24
+  top: '12px',
+  right: '12px',
+  cursor: 'pointer',
+};
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  zIndex: 10,
+};
+const modalContentStyle = {
+  position: 'fixed',
+  bottom: 0,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  backgroundColor: 'white',
+  borderTopLeftRadius: '16px',
+  borderTopRightRadius: '16px',
+  padding: '20px',
+  zIndex: 11,
+  boxSizing: 'border-box',
+  width: '100%',
+  maxWidth: '390px',
+};
+const modalHeaderStyle = {
+  fontSize: '18px',
+  fontWeight: 'bold',
+  marginBottom: '20px',
+};
+const optionStyle = {
+  padding: '12px 0',
+  fontSize: '16px',
+  cursor: 'pointer',
+  borderBottom: '1px solid #f0f0f0',
 };
 
 
+// --- 자식 컴포넌트 ---
 
-const BusinessListItem = ({ business }) => {
-  const [isLiked, setIsLiked] = useState(false);
-  const handleLikeClick = () => {
-    setIsLiked(prevState => !prevState);
+// 바텀 시트(필터) 컴포넌트
+const BottomSheet = ({ isOpen, onClose, title, options, selectedValue, onSelect }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div style={modalOverlayStyle} onClick={onClose}>
+      <div style={modalContentStyle} onClick={(e) => e.stopPropagation()}>
+        <h3 style={modalHeaderStyle}>{title}</h3>
+        {options.map((option, index) => (
+          <div 
+            key={index} 
+            style={{...optionStyle, fontWeight: selectedValue === option ? 'bold' : 'normal', color: selectedValue === option ? '#0080FF' : '#111'}}
+            onClick={() => {
+              onSelect(option);
+              onClose();
+            }}
+          >
+            {option}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// 학생 목록 아이템 컴포넌트
+const StudentListItem = ({ student, onSelect, onLike }) => {
+  const handleLikeClick = (e) => {
+    e.stopPropagation();
+    onLike(student.id, !student.isLiked);
   };
 
   return (
-    <div style={cardStyle}>
+    <div style={cardStyle} onClick={() => onSelect(student.id)}>
       <div style={imagePlaceholderStyle}>
+        {/* <img src={student.profileImageUrl} alt={student.name} /> */}
       </div>
       <div style={infoContainerStyle}>
-        <div style={titleStyle}>{business.name}</div>
+        <div style={titleStyle}>{student.name}</div>
         <div style={subtitleStyle}>
-          {`${business.location} ∙ ${business.category} ∙ ${business.time}`}
+          {`${student.location} ∙ ${student.career}건 ∙ ${student.status}`}
         </div>
-        <div style={temperatureStyle}><Temp/> {business.temp}°C</div>
+        <div style={temperatureStyle}><Temp/> {student.temperature}°C</div>
       </div>
       <button style={likeButtonStyle} onClick={handleLikeClick}>
-        {/* isLiked 상태에 따라 다른 아이콘을 보여줍니다. */}
-        {isLiked ? <Heart /> : <EmptyHeart />}
+        {student.isLiked ? <Heart /> : <EmptyHeart />}
       </button>
     </div>
   );
 };
 
+
+// --- 메인 페이지 컴포넌트 ---
 export default function SearchOwner() {
   const navigate = useNavigate();
-  const [businesses, setBusinesses] = useState(businessData);
+  
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // 검색/필터/정렬을 위한 상태
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    region: '지역',
+    career: '경력',
+    status: '구직상태'
+  });
+  const [sortBy, setSortBy] = useState('추천순');
+  
+  // 모달 제어를 위한 상태
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetContent, setSheetContent] = useState({ title: '', options: [], type: '' });
+
+  // API 호출 로직
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('로그인이 필요합니다.');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        'https://unibiz.lion.it.kr/api/student/search',
+        {
+          query: searchTerm,
+          filters: {
+            region: filters.region === '지역' ? null : filters.region,
+            career: filters.career === '경력' ? null : filters.career,
+            status: filters.status === '구직상태' ? null : filters.status,
+          },
+          sortBy: sortBy === '추천순' ? null : sortBy,
+        },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      const transformedData = (response.data.students || []).map(item => ({
+        id: item.studentId,
+        name: item.name,
+        location: item.region,
+        career: item.career,
+        status: item.jobStatus,
+        temperature: item.temperature,
+        isLiked: item.isLikedByOwner,
+      }));
+
+      setStudents(transformedData);
+      setTotalCount(response.data.totalCount || 0);
+
+    } catch (err) {
+      setError('학생 목록을 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filters, sortBy, navigate]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  // 찜하기 API 호출 함수
+  const handleLikeToggle = async (studentId, willLike) => {
+    setStudents(currentStudents =>
+      currentStudents.map(student =>
+        student.id === studentId ? { ...student, isLiked: willLike } : student
+      )
+    );
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.post(
+        `/api/student/${studentId}/like`, 
+        { like: willLike },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+    } catch (err) {
+      alert('찜하기 처리에 실패했습니다. 다시 시도해주세요.');
+      setStudents(currentStudents =>
+        currentStudents.map(student =>
+          student.id === studentId ? { ...student, isLiked: !willLike } : student
+        )
+      );
+    }
+  };
+  
+  // 모달을 여는 함수
+  const openSheet = (type) => {
+    const contentMap = {
+      region: { title: '지역 선택', options: ['지역', '서울', '경기', '인천'] },
+      career: { title: '경력 선택', options: ['경력', '1년 이하', '1-3년', '3년 이상'] },
+      status: { title: '구직상태 선택', options: ['구직상태', '구직 중', '휴식 중'] },
+      sort: { title: '정렬 순서', options: ['추천순', '최신순', '인기순'] }
+    };
+    setSheetContent({ ...contentMap[type], type });
+    setIsSheetOpen(true);
+  };
+
+  // 모달에서 옵션을 선택했을 때 상태를 업데이트하는 함수
+  const handleFilterSelect = (selectedValue) => {
+    const { type } = sheetContent;
+    if (type === 'sort') {
+      setSortBy(selectedValue);
+    } else {
+      setFilters(prev => ({ ...prev, [type]: selectedValue }));
+    }
+  };
 
   return (
     <div style={containerStyle}>
       <div style={frameStyle}>
         <header style={headerContainerStyle}>
-          <button style={headerButtonStyle} onClick={() => navigate(-1)}>
+          <button style={backButtonStyle} onClick={() => navigate(-1)}>
             <BackIcon />
           </button>
           <h1 style={headerTitleStyle}>학생 포트폴리오 조회</h1>
-          <button style={headerButtonStyle}>
+          <button style={heartHeaderButtonStyle} onClick={() => navigate('/owner/heart')}>
             <HeartH />
           </button>
         </header>
-        <main style={mainContentStyle}>
-          <div style={searchBarStyle}>
-            <input style={searchInputStyle} placeholder="검색어를 입력하세요" />
-            <Search />
-          </div>
 
-          <div style={filterContainerStyle}>
-            <div style={filterButtonsStyle}>
-              <button style={filterButtonStyle}>필터 <DropDownB /></button>
-              <button style={filterButtonStyle}>지역 <DropDownB /></button>
-              <button style={filterButtonStyle}>경력 <DropDownB /></button>
-              <button style={filterButtonStyle}>구직상태 <DropDownB /></button>
-            </div>
-            <div style={listHeaderStyle}>
-              <span style={itemCountStyle}>120개</span>
-              <button style={sortStyle}>추천순<DropDownG/></button>
-            </div>
-          </div>
+        <div style={searchInputContainerStyle}>
+          <input 
+            style={searchInputStyle} 
+            placeholder="검색어를 입력하세요"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && fetchStudents()}
+          />
+          <button onClick={fetchStudents} style={{background: 'none', border: 'none', cursor: 'pointer'}}><SearchIcon /></button>
+        </div>
 
-          <div style={listWrapperStyle}>
-            {businesses.map(business => (
-              <BusinessListItem key={business.id} business={business} />
-            ))}
+        <div style={filterBarStyle}>
+          <div style={filterButtonsContainerStyle}>
+            <button style={chipButtonStyle} onClick={() => openSheet('region')}>{filters.region} <DropDownB /></button>
+            <button style={chipButtonStyle} onClick={() => openSheet('career')}>{filters.career} <DropDownB /></button>
+            <button style={chipButtonStyle} onClick={() => openSheet('status')}>{filters.status} <DropDownB /></button>
           </div>
-        </main>
-        {/* 하단 네비게이션 바가 위치할 수 있습니다. */}
+          <button style={chipButtonStyle} onClick={() => openSheet('sort')}>{sortBy}<DropDownB /></button>
+        </div>
+
+        <div style={listContainerStyle}>
+          {loading && <p style={{textAlign: 'center', color: '#868e96'}}>로딩 중...</p>}
+          {error && <p style={{textAlign: 'center', color: 'red'}}>{error}</p>}
+          {!loading && !error && students.length === 0 && (
+            <p style={{textAlign: 'center', color: '#868e96', paddingTop: '50px'}}>검색 결과가 없습니다.</p>
+          )}
+          {!loading && !error && students.map(student => (
+            <StudentListItem 
+              key={student.id} 
+              student={student}
+              onSelect={(studentId) => navigate(`/student/profile/${studentId}`)}
+              onLike={handleLikeToggle}
+            />
+          ))}
+        </div>
+
+        <BottomSheet
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+          title={sheetContent.title}
+          options={sheetContent.options}
+          selectedValue={sheetContent.type === 'sort' ? sortBy : filters[sheetContent.type]}
+          onSelect={handleFilterSelect}
+        />
       </div>
     </div>
   );
