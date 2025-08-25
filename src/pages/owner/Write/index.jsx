@@ -177,13 +177,17 @@ const ctaBtnStyle = {
 /* ===== 값 정규화 ===== */
 function formatBizNo(raw) {
   const d = String(raw || "").replace(/\D/g, "");
-  return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}` : raw;
+  return d.length === 10
+    ? `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`
+    : raw;
 }
 function normalizePrice(raw) {
   return String(raw || "").replace(/[^\d]/g, "");
 }
 function normalizePeriod(raw) {
-  return String(raw || "").replace(/\s*/g, "").replace(/–|—|-/g, "~");
+  return String(raw || "")
+    .replace(/\s*/g, "")
+    .replace(/–|—|-/g, "~");
 }
 
 /* ===== 페이지 ===== */
@@ -211,19 +215,19 @@ export default function WriteOwner() {
       console.log("=== 파일 선택 이벤트 ===");
       console.log("e.target.files:", e.target.files);
       console.log("파일 개수:", e.target.files?.length || 0);
-      
+
       const files = Array.from(e.target.files || []);
       console.log("Array.from 결과:", files);
-      
+
       files.forEach((file, index) => {
         console.log(`파일 ${index + 1}:`, {
           name: file.name,
           size: file.size,
           type: file.type,
-          isFile: file instanceof File
+          isFile: file instanceof File,
         });
       });
-      
+
       setImages(files); // File[] 배열로 설정
       console.log("setImages 호출 완료");
     };
@@ -234,7 +238,7 @@ export default function WriteOwner() {
   async function submitRecruitPosting() {
     console.log("=== 제출 시작 ===");
     console.log("현재 images 상태:", images);
-    
+
     if (!businessNumber.trim()) {
       alert("사업자번호를 입력해 주세요.");
       return;
@@ -267,7 +271,7 @@ export default function WriteOwner() {
 
     // ✅ FormData는 이미지만 포함
     const form = new FormData();
-    
+
     console.log("=== 이미지 처리 ===");
     if (Array.isArray(images) && images.length > 0) {
       console.log(`이미지 있음. 길이: ${images.length}`);
@@ -289,7 +293,7 @@ export default function WriteOwner() {
 
     return axiosInstance.post(url, form, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   }
@@ -415,13 +419,13 @@ export default function WriteOwner() {
                 console.log("=== 전송 시작 ===");
                 const res = await submitRecruitPosting();
                 console.log("=== 전송 성공 ===", res);
-                
+
                 const data = res?.data;
                 if (data?.success === false) {
                   alert(data?.message || "등록에 실패했습니다.");
                   return;
                 }
-                
+
                 // 성공 시 다음 페이지로 이동
                 DONE_PATH &&
                   navigate(DONE_PATH, {
@@ -444,21 +448,32 @@ export default function WriteOwner() {
                 console.error("응답 헤더:", err.response?.headers);
                 console.error("응답 데이터:", err.response?.data);
                 console.error("에러 메시지:", err.message);
-                
+
                 // 더 자세한 에러 정보 표시
                 if (err.response?.status === 500) {
                   console.error("500 에러 - 서버 내부 오류");
                   if (err.response?.data) {
                     alert(`서버 에러: ${JSON.stringify(err.response.data)}`);
                   } else {
-                    alert("서버 내부 오류가 발생했습니다. 관리자에게 문의해주세요.");
+                    alert(
+                      "서버 내부 오류가 발생했습니다. 관리자에게 문의해주세요."
+                    );
                   }
                 } else if (err.response?.status === 413) {
-                  alert("파일 크기가 너무 큽니다. 더 작은 파일을 선택해주세요.");
+                  alert(
+                    "파일 크기가 너무 큽니다. 더 작은 파일을 선택해주세요."
+                  );
                 } else if (err.response?.status === 400) {
-                  alert(`입력 데이터 오류: ${err.response?.data?.message || "입력 형식을 확인해주세요."}`);
+                  alert(
+                    `입력 데이터 오류: ${
+                      err.response?.data?.message || "입력 형식을 확인해주세요."
+                    }`
+                  );
                 } else {
-                  alert(err.response?.data?.message || `네트워크 오류 (${err.response?.status || "알 수 없음"})`);
+                  alert(
+                    err.response?.data?.message ||
+                      `네트워크 오류 (${err.response?.status || "알 수 없음"})`
+                  );
                 }
                 return;
               }

@@ -15,28 +15,34 @@ function authHeaders() {
   };
 }
 
+// boolean 문자열/숫자도 안전하게 변환
+function toBool(v) {
+  if (typeof v === "boolean") return v;
+  if (typeof v === "number") return v !== 0;
+  if (typeof v === "string")
+    return ["true", "1", "on", "yes", "y"].includes(v.toLowerCase());
+  return false;
+}
+
 // 공통 언랩
 function unwrap(resp) {
-  // axios 응답: { data: ... } -> 서버가 {data: ...} 래핑하면 한 번 더 벗김
   const d = resp?.data;
   return d?.data ?? d ?? null;
 }
 
-/** 학생 마이페이지: GET /api/student/mypage
- *  (여기서 portfolios/temperature 등 포함될 수 있음)
- */
+/** 학생 마이페이지: GET /api/student/mypage */
 export async function getStudentMypage() {
   const resp = await api.get("/api/student/mypage", { headers: authHeaders() });
   return unwrap(resp);
 }
 
-/** 온도 조회: /api/student/mypage 에서 추출 */
+/** 온도 조회 */
 export async function getTemperature() {
   const mp = await getStudentMypage();
   return mp?.temperature ?? mp?.temp ?? null;
 }
 
-/** 포트폴리오 목록: /api/student/mypage.portfolios에서 추출 */
+/** 포트폴리오 목록 */
 export async function getPortfolios() {
   const mp = await getStudentMypage();
   const list =
@@ -46,55 +52,76 @@ export async function getPortfolios() {
   return list;
 }
 
-/** 포트폴리오 생성: POST /api/portfolio/ */
-export async function addPortfolio(payload) {
-  const resp = await api.post("/api/portfolio/", payload, {
-    headers: authHeaders(),
+/**
+ * 포트폴리오 생성: POST /api/portfolio/
+ * - 스웨거 명세: 텍스트/불리언은 (query), 이미지 배열은 multipart/form-data (body)
+ * - 이 함수는 FormData/Plain Object 둘 다 허용:
+ *    - FormData가 들어오면: 폼값을 query에도 붙여주고(body는 그대로: 이미지/텍스트 포함)
+ *    - Object가 들어오면: query는 텍스트/불리언, body는 이미지들만 FormData로 전송
+ */
+export async function addPortfolio(formOrPayload) {
+  const token =
+    localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  // Content-Type은 명시하지 않음(브라우저가 boundary 포함해서 설정)
+
+  let data; // multipart body
+  let params; // query string
+
+  const buildParams = (src) => ({
+    title: src.title ?? src.get?.("title") ?? "",
+    progressPeriod:
+      src.progressPeriod ??
+      src.progress_period ??
+      src.get?.("progressPeriod") ??
+      "",
+    prize: toBool(src.prize ?? src.get?.("prize")),
+    workDoneProgress:
+      src.workDoneProgress ??
+      src.process ??
+      src.get?.("workDoneProgress") ??
+      "",
+    result: src.result ?? src.get?.("result") ?? "",
+    felt: src.felt ?? src.growth ?? src.get?.("felt") ?? "",
+    isPrivate: toBool(src.isPrivate ?? src.get?.("isPrivate")),
+    // 선택 필드(명세에 없으면 무시됨): award
+    award: src.award ?? src.get?.("award") ?? "",
   });
-  return unwrap(resp); // 생성된 포트폴리오 객체(또는 새 id)
+
+  if (typeof FormData !== "undefined" && formOrPayload instanceof FormData) {
+    // FormData로 들어온 경우: body는 그대로, query도 붙여서 양쪽 모두 지원
+    const fd = formOrPayload;
+
+    // FormData에서 값 읽기 위해 get 메서드를 흉내내는 래퍼
+    const src = {
+      get: (k) => fd.get(k),
+    };
+    params = buildParams(src);
+
+    data = fd; // 그대로 전송(이미지 + 텍스트 포함되어 있어도 OK)
+  } else {
+    // Plain object로 들어온 경우: 이미지는 body(FormData), 텍스트/불리언은 query
+    const src = formOrPayload || {};
+    params = buildParams(src);
+
+    const files = Array.isArray(src.images) ? src.images : [];
+    const fd = new FormData();
+    files.forEach((file) => {
+      if (file) fd.append("images", file, file.name);
+    });
+    data = fd;
+  }
+
+  const resp = await api.post("/api/portfolio/", data, { headers, params });
+  return resp?.data?.data ?? resp?.data ?? null;
 }
 
-/** 포트폴리오 상세: GET /api/portfolio/{id} */
-export async function getPortfolio(id) {
-  const resp = await api.get(`/api/portfolio/${encodeURIComponent(id)}`, {
-    headers: authHeaders(),
-  });
-  return unwrap(resp);
-}
-
-/** 포트폴리오 수정: PUT /api/portfolio/{id} */
-export async function updatePortfolio(id, payload) {
-  const resp = await api.put(
-    `/api/portfolio/${encodeURIComponent(id)}`,
-    payload,
-    {
-      headers: authHeaders(),
-    }
-  );
-  return unwrap(resp);
-}
-
-/** 포트폴리오 삭제: DELETE /api/portfolio/{id} */
-export async function deletePortfolio(id) {
-  await api.delete(`/api/portfolio/${encodeURIComponent(id)}`, {
-    headers: authHeaders(),
-  });
-  return true;
-}
-
-/** (스웨거에 없음) 공개여부 변경 API는 제거/주석 처리 */
-// export async function updatePortfolioVisibility(id, visibility) { ... }
-
-/** (스웨거에 없음) 소상공인 마이페이지 API는 제거/주석 처리 */
-// export const getBusinesses = () => api.get("/mypage/business");
-// === 업체(비즈니스) API: /api/store ===
-// 공통: axios 인스턴스(api), authHeaders(), unwrap()는 파일 상단에 이미 존재한다고 가정
+/* ================== 업체(비즈니스) API: /api/store ================== */
 
 // 목록: GET /api/store
 export async function getBusinesses() {
   const resp = await api.get("/api/store", { headers: authHeaders() });
   const d = resp?.data?.data ?? resp?.data ?? null;
-  // 배열/페이지 대응
   return Array.isArray(d) ? d : d?.items || d?.content || [];
 }
 
@@ -102,9 +129,7 @@ export async function getBusinesses() {
 export async function getBusiness(businessNumber) {
   const resp = await api.get(
     `/api/store/${encodeURIComponent(businessNumber)}`,
-    {
-      headers: authHeaders(),
-    }
+    { headers: authHeaders() }
   );
   return resp?.data?.data ?? resp?.data ?? null;
 }
@@ -114,7 +139,7 @@ export async function addBusiness(payload) {
   const resp = await api.post("/api/store/create", payload, {
     headers: authHeaders(),
   });
-  return resp?.data?.data ?? resp?.data ?? null; // 생성된 객체(또는 id)
+  return resp?.data?.data ?? resp?.data ?? null;
 }
 
 // 수정: PUT /api/store/{businessNumber}
