@@ -9,6 +9,7 @@ import DownBarSrc from "../../../assets/downBar.svg";
 import CalendarScr from "../../../assets/Calendar.svg";
 import { useHeart } from "../../../contexts/heartcontext";
 import axiosInstance from "../../common/Auth/axios";
+import LogoutButton from "../../common/components/LogoutButton";
 
 const FAVORITES_PATH = "/student/heart";
 const NOTIFICATIONS_PATH = "/student/notice";
@@ -524,15 +525,18 @@ export default function DashStudent() {
           <div style={rightIconsWrap}>
             <img
               src={HeartIconSrc}
-              alt="찜 페이지"
+              alt="heart"
               style={heartStyle}
               onClick={() => navigate(FAVORITES_PATH)}
             />
             <img
               src={AlarmIconSrc}
-              alt="알림 페이지"
+              alt="alarm"
               style={bellStyle}
               onClick={() => navigate(NOTIFICATIONS_PATH)}
+            />
+            <LogoutButton
+              style={{ position: "absolute", right: -36, top: 8 }}
             />
           </div>
         </div>

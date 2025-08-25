@@ -9,6 +9,7 @@ import EmptyHeartSrc from "../../../assets/emptyHeart.svg";
 import DownBarSrc from "../../../assets/downBar.svg";
 import { useHeart } from "../../../contexts/heartcontext";
 import axiosInstance from "../../common/Auth/axios";
+import LogoutButton from "../../common/components/LogoutButton";
 
 const STATUS_H = 44;
 const HEADER_H = 45;
@@ -484,6 +485,9 @@ export default function DashOwner() {
               alt="alarm"
               style={bellStyle}
               onClick={() => navigate(NOTIFICATIONS_PATH)}
+            />
+            <LogoutButton
+              style={{ position: "absolute", right: -36, top: 8 }}
             />
           </div>
         </div>

@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { setCookie } from "../../common/Auth/cookie";
 
 const toParams = (s) =>
-  Object.fromEntries(new URLSearchParams((s || "").replace(/^(\?|#)/, "")).entries());
+  Object.fromEntries(
+    new URLSearchParams((s || "").replace(/^([\?|#])/, "")).entries()
+  );
 
 export default function AuthComplete() {
   const { search, hash } = useLocation();
@@ -13,24 +15,34 @@ export default function AuthComplete() {
     const q = toParams(search);
     const h = toParams(hash);
 
-    const access =
-      q.access_token || h.access_token || q.token || h.token;
+    const access = q.access_token || h.access_token || q.token || h.token;
     const refresh =
       q.refresh_token || h.refresh_token || q.refresh || h.refresh;
 
-    const needsTypeSelection = q.needsTypeSelection === "true" || h.needsTypeSelection === "true";
+    const needsTypeSelection =
+      q.needsTypeSelection === "true" || h.needsTypeSelection === "true";
     const userId = q.userId || h.userId;
 
     if (access && refresh) {
       setCookie("accessToken", access);
       setCookie("refreshToken", refresh);
 
-      const next =
-        (needsTypeSelection && "/select") ||
-        sessionStorage.getItem("post_login_redirect") ||
-        "/main";
+      const isOnboarded = localStorage.getItem("onboarded") === "true";
+      const role = localStorage.getItem("role");
+      let next;
+      if (isOnboarded && role) {
+        if (role === "owner") {
+          next = "/owner/dash";
+        } else if (role === "student") {
+          next = "/student/dash";
+        } else {
+          next = "/select";
+        }
+      } else {
+        next = "/select";
+      }
 
-      if (userId) sessionStorage.setItem("userId", userId);
+      if (userId) localStorage.setItem("userId", userId);
 
       nav(next, { replace: true });
     } else {
