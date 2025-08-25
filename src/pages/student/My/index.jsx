@@ -6,14 +6,8 @@ import DownBarSrc from "../../../assets/downBar.svg";
 import DoneIconScr from "../../../assets/Done.svg";
 import { useNavigate } from "react-router-dom";
 
-// ✅ [연동] 마이페이지 API
-import {
-  getPortfolios,
-  addPortfolio,
-  updatePortfolio,
-  deletePortfolio,
-  getTemperature, // 필요시 사용 (현재 화면 표시는 더미)
-} from "../../../api/mypage";
+// ✅ 생성 API만 사용
+import { addPortfolio } from "../../../api/mypage";
 
 const STATUS_H = 44; // 상태바
 const HEADER_H = 45; // 헤더
@@ -414,7 +408,7 @@ const MyStudent = () => {
     }
   }, [ddOpen]);
 
-  /* ===== 포트폴리오 목록 ===== */
+  /* ===== 포트폴리오 목록 (로컬 상태) ===== */
   const [projects, setProjects] = useState([
     { id: 1, title: "프로젝트A", period: "2025.08.01 - 2025.08.07" },
     { id: 2, title: "프로젝트B", period: "2025.08.01 - 2025.08.07" },
@@ -424,60 +418,9 @@ const MyStudent = () => {
   // 현재 편집 대상 (없으면 추가 모드)
   const [editing, setEditing] = useState(null);
 
-  // 서버 목록 새로고침 (응답이 "정상 배열"일 때만 덮어쓰기)
-  const refreshPortfolios = async () => {
-    try {
-      const list = await getPortfolios();
-      if (Array.isArray(list)) {
-        setProjects(
-          list.map((p) => ({
-            id:
-              p.id ??
-              p.portfolioId ??
-              p.portfolio_id ??
-              String(p.id ?? p.portfolioId ?? Date.now()),
-            serverId: p.id ?? p.portfolioId ?? p.portfolio_id ?? null, // ← API용 id
-            title: p.title ?? "제목 없음",
-            period:
-              p.startDate && p.endDate
-                ? `${p.startDate} - ${p.endDate}`
-                : p.period ?? "기간 미정",
-            award: p.award,
-            process: p.process,
-            output: p.output,
-            growth: p.growth,
-            scope: p.scope,
-          }))
-        );
-      } // 배열이 아니면(에러/미연동) 현재 목록 유지
-    } catch (e) {
-      console.warn("refreshPortfolios failed", e);
-      // 실패해도 현재 목록 유지
-    }
-  };
-
-  useEffect(() => {
-    refreshPortfolios();
-    // getTemperature() 등은 필요해지면 여기에
-  }, []);
-
-  // ✅ 단건 삭제 (낙관적 업데이트 + 안전 재조회)
+  // 로컬 삭제
   const handleDeleteOne = async (item) => {
-    // 화면에서 먼저 제거 (낙관적)
     setProjects((prev) => prev.filter((p) => p.id !== item.id));
-
-    const targetId = item?.serverId ?? item?.id;
-    try {
-      if (targetId == null) throw new Error("No portfolio id");
-      await deletePortfolio(targetId);
-    } catch (e) {
-      console.warn("deletePortfolio failed", e);
-      // 실패 시: 사용자 경험상 롤백까진 하지 않고 토스트/알럿만 고려 가능
-      // alert("삭제에 실패했습니다. 새로고침 후 다시 시도해주세요.");
-    }
-
-    // 서버 재조회 (정상 배열일 때만 목록 갱신 → 빈/에러면 현재 화면 유지)
-    await refreshPortfolios();
   };
 
   /* ===== 편집: 공개 범위/인증 ===== */
@@ -515,46 +458,56 @@ const MyStudent = () => {
             }}
             onDone={async (payload) => {
               try {
-                if (editing?.id) {
-                  // 수정
-                  const saved = await updatePortfolio(
-                    editing.serverId ?? editing.id,
-                    payload
-                  );
-                  const merged = saved || payload;
-                  setProjects((prev) =>
-                    prev.map((p) =>
-                      p.id === editing.id ? { ...p, ...merged } : p
+                // ====== 생성(POST /api/portfolio/) 연동 ======
+                if (!editing?.id) {
+                  const form = new FormData();
+                  form.append("title", payload.title ?? "");
+                  form.append("progressPeriod", payload.period ?? "");
+                  form.append(
+                    "prize",
+                    String(
+                      Boolean(
+                        payload.award && String(payload.award).trim() !== ""
+                      )
                     )
                   );
-                } else {
-                  // 추가
-                  const created = await addPortfolio(payload);
-                  const newItem = created
-                    ? {
-                        id:
-                          created.id ??
-                          created.portfolioId ??
-                          String(Date.now()),
-                        serverId: created.id ?? created.portfolioId ?? null,
-                        title: created.title,
-                        period:
-                          created.startDate && created.endDate
-                            ? `${created.startDate} - ${created.endDate}`
-                            : created.period ?? payload.period,
-                        award: created.award,
-                        process: created.process,
-                        output: created.output,
-                        growth: created.growth,
-                        scope: created.scope,
-                      }
-                    : {
-                        id: String(Date.now()),
-                        serverId: null,
-                        ...payload,
-                      };
+                  form.append("workDoneProgress", payload.process ?? "");
+                  form.append("result", payload.output ?? "");
+                  form.append("felt", payload.growth ?? "");
+                  form.append(
+                    "isPrivate",
+                    String(payload.scope === "나만 보기")
+                  );
+
+                  if (Array.isArray(payload.images)) {
+                    payload.images.forEach((file) => {
+                      if (file) form.append("images", file);
+                    });
+                  }
+
+                  await addPortfolio(form);
+
+                  // 서버 응답 id가 없을 수 있으므로 로컬에 즉시 반영
+                  const newItem = {
+                    id: String(Date.now()),
+                    title: payload.title,
+                    period: payload.period,
+                    award: payload.award,
+                    process: payload.process,
+                    output: payload.output,
+                    growth: payload.growth,
+                    scope: payload.scope,
+                  };
                   setProjects((prev) => [newItem, ...prev]);
+                } else {
+                  // 편집 모드는 서버 연동 없이 로컬만 변경 (요청사항: 생성만 연동)
+                  setProjects((prev) =>
+                    prev.map((p) =>
+                      p.id === editing.id ? { ...p, ...payload } : p
+                    )
+                  );
                 }
+
                 setView("main");
                 setEditing(null);
               } catch (e) {
@@ -1086,6 +1039,10 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
   const [output, setOutput] = useState("");
   const [growth, setGrowth] = useState("");
 
+  // 파일 선택 (이미지 배열)
+  const [images, setImages] = useState([]);
+  const fileRef = useRef(null);
+
   // 공개여부 드롭다운
   const [scope, setScope] = useState("전체 공개");
   const [scopeOpen, setScopeOpen] = useState(false);
@@ -1102,6 +1059,7 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
       setOutput(initial.output || "");
       setGrowth(initial.growth || "");
       setScope(initial.scope || "전체 공개");
+      setImages([]); // 편집 진입 시 첨부 초기화
     } else {
       setTitle("");
       setPeriod("2024.02.14 ~ 2024.03.20");
@@ -1110,6 +1068,7 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
       setOutput("");
       setGrowth("");
       setScope("전체 공개");
+      setImages([]);
     }
   }, [initial]);
 
@@ -1243,6 +1202,7 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
     color: "#0080FF",
     fontSize: 13,
     cursor: "pointer",
+    position: "relative",
   };
   const scopeRow = {
     display: "flex",
@@ -1346,8 +1306,36 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
         />
 
         <div style={label}>포트폴리오 이미지</div>
-        <div style={imgBox} onClick={() => {}}>
+        <div
+          style={imgBox}
+          onClick={() => fileRef.current && fileRef.current.click()}
+          title="이미지 선택"
+        >
           이미지 첨부하기
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              setImages(files);
+            }}
+          />
+          {images.length > 0 && (
+            <span
+              style={{
+                position: "absolute",
+                right: 10,
+                bottom: 8,
+                fontSize: 12,
+                color: "#555",
+              }}
+            >
+              {images.length}개 선택됨
+            </span>
+          )}
         </div>
 
         <div style={{ ...rowBetween, marginTop: 12 }}>
@@ -1466,6 +1454,7 @@ function PortfolioWriteOverlay({ onClose, onDone, initial, onDelete }) {
               output,
               growth,
               scope,
+              images, // ← 파일 배열 함께 전달
             })
           }
         >
