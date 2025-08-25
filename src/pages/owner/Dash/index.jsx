@@ -319,38 +319,32 @@ function CandidateCard({
   );
 }
 
-/* ===== 서버 → 카드 데이터 매핑 ===== */
-function mapRecruitToCard(r = {}) {
+/* ===== 서버 → 카드 데이터 매핑 (학생 프로필) ===== */
+function mapStudentToCard(s = {}) {
   const id =
-    r.id ??
-    r.recruitId ??
-    r.postId ??
-    r.uuid ??
-    String(Date.now() + Math.random());
-  const title = r.title ?? r.postTitle ?? r.name ?? "구인 공고";
-  const category = r.category ?? r.jobCategory ?? r.type ?? "";
-  // isRecruiting(boolean) 또는 status 문자열 추론
-  const isRecruiting =
-    typeof r.isRecruiting === "boolean"
-      ? r.isRecruiting
-      : String(r.status ?? "")
-          .toLowerCase()
-          .includes("recruit");
-  const temperature = r.temperature ?? r.heat ?? null;
-  const tempText =
-    temperature != null ? `${temperature}°C` : isRecruiting ? "모집중" : "마감";
+    s.studentId ?? s.userId ?? s.id ?? String(Date.now() + Math.random());
+  const name = s.name ?? "학생";
+  // 한 줄: 학교 · 전공 (region이 있으면 뒤에 붙여도 됨)
+  const school = s.school ?? "";
+  const major = s.major ?? "";
+  const region = s.region ?? "";
+  const fieldLine = `${school}${school && major ? " · " : ""}${major}${
+    region ? ` · ${region}` : ""
+  }`.trim();
+  const temp =
+    typeof s.temperature === "number" ? `${s.temperature}°C` : "36°C";
 
   return {
     id,
-    name: title, // 카드 큰 타이틀
-    age: "", // 여긴 표시 안함
-    field: category, // 카테고리 표기
-    temp: tempText, // 상태/온도
-    raw: r, // 상세 이동 시 전달
+    name,
+    age: "", // 나이 정보 없음 → 공란
+    field: fieldLine, // 학교 · 전공 · 지역
+    temp,
+    raw: s,
   };
 }
 
-/* ===== 메인(소상공인 대시보드) ===== */
+/* ===== 메인(소상공인 대시보드: 학생 프로필 목록) ===== */
 export default function DashOwner() {
   const navigate = useNavigate();
 
@@ -374,15 +368,17 @@ export default function DashOwner() {
     })();
   }, []);
 
-  // ---- 필터 상태 ----
-  const [area, setArea] = useState("우만동 외"); // API에는 안 보냄(로컬 UI)
-  const [price, setPrice] = useState("가격"); // API에는 안 보냄(로컬 UI)
-  const [category, setCategory] = useState("카테고리"); // ✅ API의 category로 매핑
-  const [sort, setSort] = useState("정확도 순"); // API에는 안 보냄(로컬 UI)
+  // ---- 필터 상태(라벨은 기존 UI 유지) ----
+  // area → region 파라미터로 매핑
+  const [area, setArea] = useState("우만동 외");
+  // price 칩은 현재 미사용(온도 필터가 필요하면 여기로 매핑 가능)
+  const [price, setPrice] = useState("가격");
+  // category → major 파라미터로 매핑
+  const [category, setCategory] = useState("카테고리");
+  const [sort, setSort] = useState("정확도 순"); // API 미사용(로컬)
 
-  // 검색/상태 쿼리
-  const [keyword] = useState(""); // 검색 입력 UI가 없으니 일단 공란
-  const [onlyRecruiting] = useState(true); // 기본값: 모집중만
+  // 검색 키워드(현재 입력 UI 없음)
+  const [keyword] = useState("");
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetTitle, setSheetTitle] = useState("필터");
@@ -393,34 +389,35 @@ export default function DashOwner() {
   const categoryRef = useRef(null);
   const sortRef = useRef(null);
 
-  // ✅ 구인글 목록
+  // ✅ 학생 프로필 목록
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 구인글 불러오기
-  const fetchRecruitList = async () => {
+  // 학생 프로필 불러오기 — GET /api/student/profiles
+  const fetchStudentProfiles = async () => {
     setLoading(true);
     setError(null);
     try {
-      // "카테고리" 라벨은 API로 보내지 않음
-      const categoryParam = category === "카테고리" ? undefined : category;
+      const regionParam = area === "우만동 외" ? undefined : area;
+      const majorParam = category === "카테고리" ? undefined : category;
+
       const params = {
-        category: categoryParam,
+        region: regionParam,
+        major: majorParam,
         keyword: keyword || undefined,
-        isRecruiting: onlyRecruiting,
+        // 필요 시 school, isEmployment, minTemperature, maxTemperature도 여기서 추가
       };
 
-      const res = await axiosInstance.get("/api/recruit/", { params });
-      // 응답 포맷 가변성 고려: {data: [...] } 혹은 바로 [...]
+      const res = await axiosInstance.get("/api/student/profiles", { params });
       const list = Array.isArray(res?.data?.data)
         ? res.data.data
         : Array.isArray(res?.data)
         ? res.data
         : [];
-      setItems(list.map(mapRecruitToCard));
+      setItems(list.map(mapStudentToCard));
     } catch (e) {
-      console.error("구인글 목록 조회 실패", e);
+      console.error("학생 프로필 목록 조회 실패", e);
       setError(e);
       setItems([]);
     } finally {
@@ -428,11 +425,11 @@ export default function DashOwner() {
     }
   };
 
-  // 초기 + 카테고리 변경 시 재조회
+  // 초기 로드 + region/major 변경 시 재조회
   useEffect(() => {
-    fetchRecruitList();
+    fetchStudentProfiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [area, category]);
 
   const openSheet = (section) => {
     setOpenSection(section);
@@ -496,10 +493,10 @@ export default function DashOwner() {
           <div style={infoTitleStyle}>
             {(storeName || "우리 가게") + "님을 위한"}
             <br />
-            구인 공고
+            대학생 기획자 프로필
           </div>
           <div style={infoSubStyle}>
-            원하는 카테고리로 대학생 인재를 찾아보세요!
+            함께 우리 가게를 알릴 기획자분들을 찾아보세요!
           </div>
         </div>
 
@@ -639,7 +636,7 @@ export default function DashOwner() {
               padding: "8px 16px 24px 16px",
             }}
           >
-            {/* 동네 */}
+            {/* 동네 → region */}
             <div ref={areaRef}>
               <div
                 style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
@@ -688,7 +685,7 @@ export default function DashOwner() {
               )}
             </div>
 
-            {/* 가격 */}
+            {/* 가격(미사용 자리) */}
             <div ref={priceRef}>
               <div
                 style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
@@ -741,12 +738,12 @@ export default function DashOwner() {
               })}
             </div>
 
-            {/* 카테고리(업종) → ✅ API category 파라미터로 사용 */}
+            {/* 카테고리 → major */}
             <div ref={categoryRef}>
               <div
                 style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
               >
-                카테고리(업종)
+                카테고리(전공)
               </div>
               {[
                 "카테고리",
@@ -776,7 +773,7 @@ export default function DashOwner() {
                       borderRadius: 8,
                     }}
                     onClick={() => {
-                      setCategory(label); // 변경 시 자동 재조회(useEffect)
+                      setCategory(label);
                       setSheetTitle("카테고리");
                     }}
                   >
@@ -795,7 +792,7 @@ export default function DashOwner() {
               })}
             </div>
 
-            {/* 정렬(현재 API 미사용, 로컬 UI 유지) */}
+            {/* 정렬(로컬) */}
             <div ref={sortRef}>
               <div
                 style={{ fontSize: 15, fontWeight: 700, margin: "14px 0 10px" }}
